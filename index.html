@@ -1,0 +1,2761 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P&amp;T Memo Drafter</title>
+<meta name="description" content="Drafts dean's memoranda supporting tenure and promotion cases from the candidate's dossier, prior memos, and promotion criteria.">
+<style>
+/* ------------------------------------------------------------------ tokens */
+:root{
+  color-scheme: light dark;
+  --bg:#f4f2ee; --surface:#ffffff; --surface-2:#faf8f5; --surface-3:#f1eee8;
+  --ink:#1c2230; --ink-2:#3f4757; --muted:#6a7180;
+  --line:#e4e0d8; --line-strong:#cfc9bd;
+  --accent:#7b1e2c; --accent-hover:#641523; --accent-ink:#ffffff; --accent-soft:#f6e9eb;
+  --ok:#1d7a4c; --ok-soft:#e5f3eb; --warn:#8a5a00; --warn-soft:#fbf1dc; --err:#b42318; --err-soft:#fceceb;
+  --info:#28518f; --info-soft:#eaf0f9;
+  --focus:#2457c5;
+  --paper:#ffffff; --paper-ink:#141414;
+  --shadow:0 1px 2px rgba(17,20,28,.05),0 6px 20px rgba(17,20,28,.06);
+  --radius:12px;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --serif:"Times New Roman",Times,Georgia,serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#14161b; --surface:#1c1f26; --surface-2:#22262e; --surface-3:#2a2e37;
+    --ink:#e9e7e3; --ink-2:#c9ccd3; --muted:#9aa0ab;
+    --line:#2e323b; --line-strong:#3e434e;
+    --accent:#e08a97; --accent-hover:#eda3ae; --accent-ink:#22090e; --accent-soft:#3b232a;
+    --ok:#62c795; --ok-soft:#1b3328; --warn:#e5b860; --warn-soft:#3a2f17; --err:#f39388; --err-soft:#3e201d;
+    --info:#9dbcf0; --info-soft:#1f2a3d;
+    --focus:#8fb1ff;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 6px 20px rgba(0,0,0,.28);
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+h1,h2,h3,h4{line-height:1.25;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+/* ------------------------------------------------------------------ app bar */
+.appbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;justify-content:space-between;
+  padding:10px 24px;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand svg{flex:none;color:var(--ink)}
+.brand-title{font-weight:700;font-size:16px;letter-spacing:.01em}
+.brand-sub{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.appbar-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.status-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;max-width:320px}
+.status-pill .dot{width:8px;height:8px;border-radius:50%;background:var(--warn);flex:none}
+.status-pill.ok .dot{background:var(--ok)}
+.status-pill span.txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ------------------------------------------------------------------ steps */
+.steps{display:flex;gap:4px;padding:10px 24px 0;max-width:1180px;margin:0 auto;overflow-x:auto;scrollbar-width:thin}
+.steps button{flex:none;display:flex;align-items:center;gap:8px;border:0;background:transparent;padding:10px 14px;border-radius:10px 10px 0 0;cursor:pointer;color:var(--muted);font-weight:600;font-size:14px;border-bottom:2px solid transparent}
+.steps button:hover{color:var(--ink);background:var(--surface-3)}
+.steps button[aria-current="step"]{color:var(--ink);border-bottom-color:var(--accent)}
+.steps .num{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;font-size:12px;background:var(--surface-3);color:var(--ink-2);border:1px solid var(--line-strong)}
+.steps button[aria-current="step"] .num{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.steps button.done .num{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.steps button.done .num::after{content:"✓";font-size:12px}
+.steps button.done .num b{display:none}
+.steps-rule{max-width:1180px;margin:0 auto;border-bottom:1px solid var(--line)}
+
+/* ------------------------------------------------------------------ layout */
+main{max-width:1180px;margin:0 auto;padding:24px 24px 80px}
+.panel h2{font-size:24px;font-weight:700;letter-spacing:-.01em;margin-bottom:6px}
+.lead{color:var(--ink-2);margin:0 0 20px;max-width:780px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:16px}
+.card h3{font-size:16px;font-weight:700;margin-bottom:4px}
+.card .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.span2{grid-column:1 / -1}
+@media (max-width:760px){
+  .grid2,.grid3{grid-template-columns:1fr}
+  .appbar{padding:10px 16px}
+  main{padding:16px 16px 80px}
+  .steps{padding:8px 16px 0}
+  .brand-sub{display:none}
+  .appbar{position:static;flex-wrap:wrap;gap:8px}
+  .brand-title{white-space:nowrap}
+  .appbar-actions{width:100%;justify-content:flex-start}
+  .status-pill{flex:1 1 100%;max-width:none}
+}
+.panel-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:22px;flex-wrap:wrap}
+
+/* ------------------------------------------------------------------ controls */
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field>label,.label{font-weight:600;font-size:13.5px;color:var(--ink)}
+.field .opt{font-weight:400;color:var(--muted)}
+.hint{font-size:12.5px;color:var(--muted)}
+input[type=text],input[type=password],input[type=date],input[type=number],input:not([type]),select,textarea{
+  width:100%;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;min-height:38px}
+textarea{resize:vertical;min-height:72px;line-height:1.45}
+select{padding-right:28px}
+input:focus,select:focus,textarea:focus{border-color:var(--focus);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--focus) 18%,transparent)}
+.input-row{display:flex;gap:8px;align-items:stretch}
+.input-row>input,.input-row>select{flex:1;min-width:0}
+.check{display:flex;align-items:flex-start;gap:8px;font-size:14px;cursor:pointer}
+.check input{margin-top:3px;accent-color:var(--accent)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);
+  padding:8px 14px;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap;min-height:38px;text-decoration:none;color:var(--ink)}
+.btn:hover{background:var(--surface-3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:var(--surface-3)}
+.btn.sm{padding:5px 10px;min-height:32px;font-size:13px}
+.btn.lg{padding:11px 20px;font-size:15px;min-height:44px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn svg{width:16px;height:16px;flex:none}
+.linkbtn{border:0;background:none;color:var(--accent);cursor:pointer;padding:0;font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+.callout{border-radius:10px;padding:12px 14px;font-size:13.5px;border:1px solid transparent;margin:12px 0}
+.callout.info{background:var(--info-soft);color:var(--ink-2);border-color:color-mix(in srgb,var(--info) 25%,transparent)}
+.callout.warn{background:var(--warn-soft);color:var(--ink);border-color:color-mix(in srgb,var(--warn) 30%,transparent)}
+.callout.err{background:var(--err-soft);color:var(--ink);border-color:color-mix(in srgb,var(--err) 30%,transparent)}
+.callout.ok{background:var(--ok-soft);color:var(--ink);border-color:color-mix(in srgb,var(--ok) 30%,transparent)}
+.callout b{font-weight:700}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;border-radius:999px;padding:2px 8px;background:var(--surface-3);color:var(--ink-2);vertical-align:middle}
+.tag.accent{background:var(--accent-soft);color:var(--accent)}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+
+details.adv{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px}
+details.adv summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--ink-2)}
+details.adv[open] summary{margin-bottom:12px}
+
+/* ------------------------------------------------------------------ provider cards */
+.provider-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+@media (max-width:900px){.provider-grid{grid-template-columns:repeat(2,1fr)}}
+.provider-card{position:relative;display:flex;flex-direction:column;gap:2px;padding:14px 16px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;box-shadow:var(--shadow)}
+.provider-card:hover{border-color:var(--line-strong)}
+.provider-card input{position:absolute;opacity:0;pointer-events:none}
+.provider-card .pc-name{font-weight:700;font-size:16px}
+.provider-card .pc-org{font-size:12.5px;color:var(--muted)}
+.provider-card .pc-badge{position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line-strong)}
+.provider-card:has(input:checked){border-color:var(--accent);background:color-mix(in srgb,var(--accent-soft) 55%,var(--surface))}
+.provider-card:has(input:checked) .pc-badge{border-color:var(--accent);background:var(--accent);box-shadow:inset 0 0 0 3px var(--surface)}
+.provider-card:has(input:focus-visible){outline:2px solid var(--focus);outline-offset:2px}
+
+/* ------------------------------------------------------------------ documents */
+.doc-sections{display:grid;gap:16px}
+.dropzone{border:1.5px dashed var(--line-strong);border-radius:10px;padding:18px;text-align:center;background:var(--surface-2);cursor:pointer;color:var(--ink-2);transition:background .15s,border-color .15s}
+.dropzone:hover,.dropzone.over{border-color:var(--accent);background:var(--accent-soft)}
+.dropzone strong{color:var(--ink)}
+.dropzone .hint{display:block;margin-top:3px}
+.file-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.file-row{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.file-row.error{border-color:color-mix(in srgb,var(--err) 40%,var(--line));background:var(--err-soft)}
+.ficon{width:42px;height:42px;border-radius:8px;display:grid;place-items:center;font-size:10.5px;font-weight:800;letter-spacing:.04em;background:var(--surface-3);color:var(--ink-2)}
+.ficon.pdf{background:#fbe5e3;color:#a1261b}.ficon.docx{background:#e3ecfb;color:#1f4fa3}.ficon.xlsx{background:#e2f3e8;color:#1d6b3f}
+@media (prefers-color-scheme: dark){.ficon.pdf{background:#43211e;color:#f3a097}.ficon.docx{background:#1e2c45;color:#a9c3f3}.ficon.xlsx{background:#1b3527;color:#8fd6ac}}
+.fname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fmeta{font-size:12.5px;color:var(--muted)}
+.fwarn{font-size:12.5px;color:var(--warn);margin-top:2px}
+.file-row.error .fwarn{color:var(--err)}
+.fcontrols{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.fcontrols select{width:auto;min-width:0;max-width:240px;min-height:32px;padding:4px 26px 4px 8px;font-size:13px}
+.fcontrols input.flabel{width:230px;min-height:32px;padding:4px 8px;font-size:13px}
+.minitoggle{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink-2);white-space:nowrap;cursor:pointer}
+.minitoggle input{accent-color:var(--accent)}
+.iconbtn{border:1px solid transparent;background:transparent;border-radius:7px;width:32px;height:32px;display:grid;place-items:center;cursor:pointer;color:var(--ink-2)}
+.iconbtn:hover{background:var(--surface-3);border-color:var(--line)}
+.iconbtn svg{width:16px;height:16px}
+@media (max-width:760px){.file-row{grid-template-columns:42px minmax(0,1fr)}.fcontrols{grid-column:1 / -1;justify-content:flex-start}}
+.checklist{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--muted)}
+.chip.have{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.chip.opt{border-style:dashed}
+.summarybar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding:12px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:13.5px}
+.summarybar b{font-weight:700}
+.spinner{width:16px;height:16px;border-radius:50%;border:2px solid color-mix(in srgb,var(--accent) 25%,transparent);border-top-color:var(--accent);animation:spin .8s linear infinite;flex:none;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ------------------------------------------------------------------ stream */
+.stream{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);margin:16px 0;overflow:hidden}
+.stream-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.stream.finished .stream-head,.stream.error .stream-head{border-bottom-color:transparent}
+.stream-status{font-weight:600;flex:1;min-width:0}
+.stream.error .stream-status{color:var(--err)}
+.stream.finished .stream-status{color:var(--ok)}
+.stream-meta{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.stream-body{max-height:46vh;overflow:auto;padding:14px 18px;font-size:14px}
+.stream.finished .stream-body{display:none}
+.stream-usage{font-size:12px;color:var(--muted);padding:0 16px 10px}
+
+/* ------------------------------------------------------------------ rendered markdown */
+.md{line-height:1.6;overflow-wrap:anywhere}
+.md>*:first-child{margin-top:0}
+.md h1,.md h2,.md h3,.md h4{margin:1.1em 0 .45em}
+.md h1{font-size:1.3em}.md h2{font-size:1.18em}.md h3{font-size:1.05em}.md h4{font-size:1em}
+.md p{margin:.55em 0}
+.md ul,.md ol{padding-left:1.4em;margin:.5em 0}
+.md li{margin:.2em 0}
+.md table{border-collapse:collapse;width:100%;font-size:13.5px;margin:.6em 0;display:block;overflow-x:auto}
+.md th,.md td{border:1px solid var(--line-strong);padding:6px 8px;text-align:left;vertical-align:top}
+.md th{background:var(--surface-3)}
+.md code{font-family:var(--mono);font-size:.9em;background:var(--surface-3);padding:1px 4px;border-radius:4px}
+.md pre{white-space:pre-wrap;font-family:var(--mono);font-size:12.5px;background:var(--surface-3);padding:10px;border-radius:8px}
+.md hr{border:0;border-top:1px solid var(--line-strong);margin:1em 0}
+.md blockquote{margin:.6em 0;padding-left:12px;border-left:3px solid var(--line-strong);color:var(--ink-2)}
+
+/* ------------------------------------------------------------------ analysis */
+.q-list{display:flex;flex-direction:column;gap:14px}
+.q-item{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface-2)}
+.q-item .q-text{font-weight:600;margin-bottom:8px}
+.q-item .q-text .qn{color:var(--accent);margin-right:6px}
+.analysis-body{max-height:560px;overflow:auto;padding-right:6px}
+
+/* ------------------------------------------------------------------ draft */
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:14px;overflow-x:auto}
+.tabs button{border:0;background:none;padding:10px 14px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs .count{display:inline-block;min-width:20px;padding:0 6px;margin-left:4px;border-radius:999px;background:var(--surface-3);font-size:12px}
+.paper-wrap{background:var(--surface-3);border-radius:var(--radius);padding:28px 16px;overflow-x:auto}
+.paper{background:var(--paper);color:var(--paper-ink);max-width:8.5in;min-height:6in;margin:0 auto;padding:.9in 1in;box-shadow:0 2px 6px rgba(0,0,0,.08),0 12px 40px rgba(0,0,0,.08);
+  font-family:var(--serif);font-size:12pt;line-height:1.4;outline:none;border-radius:2px}
+.paper:focus{box-shadow:0 0 0 2px var(--focus),0 12px 40px rgba(0,0,0,.08)}
+.paper h1,.paper h2,.paper h3,.paper h4{font-family:inherit;font-size:1em;font-weight:700;margin:1.1em 0 .4em}
+.paper h1{font-size:1.2em}
+.paper p{margin:0 0 .85em}
+.paper ul,.paper ol{margin:0 0 .85em;padding-left:1.6em}
+.paper table{border-collapse:collapse;width:100%;margin:0 0 .85em}
+.paper td,.paper th{border:1px solid #888;padding:4px 6px;vertical-align:top}
+.paper hr{border:0;border-top:1px solid #777;margin:.8em 0 1.1em}
+@media (max-width:760px){.paper{padding:28px 22px}}
+.editbar{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin:0 auto 10px;max-width:8.5in}
+.editbar .iconbtn{background:var(--surface);border-color:var(--line)}
+.editbar .sep{width:1px;height:22px;background:var(--line-strong);margin:0 4px}
+.editbar .wc{margin-left:auto;font-size:12.5px;color:var(--muted)}
+.revise-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 10px}
+.revise-chips button{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:4px 11px;font-size:12.5px;cursor:pointer;color:var(--ink-2)}
+.revise-chips button:hover{border-color:var(--accent);color:var(--accent)}
+.empty{border:1.5px dashed var(--line-strong);border-radius:var(--radius);padding:36px 24px;text-align:center;color:var(--muted);background:var(--surface-2)}
+.empty h3{color:var(--ink);font-size:17px;margin-bottom:6px}
+.raw{white-space:pre-wrap;font-family:var(--mono);font-size:12.5px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:14px;max-height:70vh;overflow:auto}
+
+/* ------------------------------------------------------------------ dialogs & toasts */
+dialog{border:1px solid var(--line);border-radius:14px;padding:0;background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.25);width:min(860px,calc(100vw - 32px));max-height:calc(100vh - 48px)}
+dialog::backdrop{background:rgba(15,17,22,.45)}
+.dlg{display:flex;flex-direction:column;max-height:calc(100vh - 48px)}
+.dlg-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.dlg-head h3{font-size:17px;flex:1}
+.dlg-body{padding:16px 20px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.dlg-foot{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.dlg textarea.big{min-height:46vh;font-family:var(--mono);font-size:12.5px}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:100;max-width:min(420px,calc(100vw - 32px))}
+.toast{background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;box-shadow:var(--shadow);font-size:14px;transition:opacity .3s,transform .3s}
+.toast.warn{background:#7a4f00;color:#fff}.toast.err{background:#a52016;color:#fff}.toast.ok{background:#1d6b43;color:#fff}
+.toast.out{opacity:0;transform:translateY(8px)}
+.howto{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:0;padding:0;list-style:none;counter-reset:s}
+.howto li{counter-increment:s;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--ink-2)}
+.howto li::before{content:counter(s);display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:11.5px;margin-right:6px}
+.howto b{color:var(--ink)}
+@media (max-width:900px){.howto{grid-template-columns:1fr 1fr}}
+.kv{font-size:12.5px;color:var(--muted)}
+.mt0{margin-top:0}.mb0{margin-bottom:0}
+@media print{.appbar,.steps,.steps-rule,#toasts{display:none}}
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
+      <rect x="5" y="3" width="18" height="24" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M9.5 9h9M9.5 13h9M9.5 17h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="22.5" cy="22" r="5.2" fill="var(--accent)"/>
+      <path d="M19.6 26.2 18.6 31l3.9-2.1 3.9 2.1-1-4.8" fill="var(--accent)"/>
+    </svg>
+    <div>
+      <div class="brand-title">P&amp;T Memo Drafter</div>
+      <div class="brand-sub">Dean's memoranda for tenure &amp; promotion cases</div>
+    </div>
+  </div>
+  <div class="appbar-actions">
+    <button class="status-pill" id="statusPill" type="button" title="AI setup"><span class="dot"></span><span class="txt">No API key</span></button>
+    <button class="btn ghost sm" id="btnNewCase" type="button">New case</button>
+    <button class="btn ghost sm" id="btnOpenCase" type="button">Open case…</button>
+    <button class="btn sm" id="btnSaveCase" type="button">Save case</button>
+  </div>
+</header>
+
+<nav class="steps" id="steps" aria-label="Steps">
+  <button type="button" data-step="setup"><span class="num"><b>1</b></span>AI setup</button>
+  <button type="button" data-step="case"><span class="num"><b>2</b></span>Case details</button>
+  <button type="button" data-step="docs"><span class="num"><b>3</b></span>Documents</button>
+  <button type="button" data-step="analysis"><span class="num"><b>4</b></span>Analysis</button>
+  <button type="button" data-step="draft"><span class="num"><b>5</b></span>Draft &amp; revise</button>
+</nav>
+<div class="steps-rule"></div>
+
+<main>
+<!-- =============================================================== 1. SETUP -->
+<section class="panel" id="panel-setup">
+  <h2>AI setup</h2>
+  <p class="lead">Choose the AI platform that will analyze the dossier and draft the memo. With an API key, the app sends the materials straight from this browser to that platform. Without a key, the app builds the full prompt for you to paste into any AI chat.</p>
+
+  <ol class="howto" aria-label="How it works">
+    <li><b>Connect</b> an AI platform or use copy &amp; paste</li>
+    <li><b>Enter</b> the case details</li>
+    <li><b>Add</b> the dossier, prior memos and criteria</li>
+    <li><b>Analyze</b> the record and answer any questions</li>
+    <li><b>Draft</b>, review, revise and export to Word</li>
+  </ol>
+  <div style="height:18px"></div>
+
+  <div class="provider-grid" role="radiogroup" aria-label="AI platform">
+    <label class="provider-card"><input type="radio" name="provider" value="anthropic"><span class="pc-badge"></span><span class="pc-name">Claude</span><span class="pc-org">Anthropic</span></label>
+    <label class="provider-card"><input type="radio" name="provider" value="gemini"><span class="pc-badge"></span><span class="pc-name">Gemini</span><span class="pc-org">Google</span></label>
+    <label class="provider-card"><input type="radio" name="provider" value="openai"><span class="pc-badge"></span><span class="pc-name">ChatGPT models</span><span class="pc-org">OpenAI</span></label>
+    <label class="provider-card"><input type="radio" name="provider" value="manual"><span class="pc-badge"></span><span class="pc-name">No API key</span><span class="pc-org">Copy &amp; paste mode</span></label>
+  </div>
+
+  <div class="card" id="keyCard">
+    <div class="grid2">
+      <div class="field span2">
+        <label for="apiKey"><span id="keyLabel">API key</span></label>
+        <div class="input-row">
+          <input type="password" id="apiKey" autocomplete="off" spellcheck="false" placeholder="Paste your API key">
+          <button class="btn" type="button" id="btnShowKey">Show</button>
+        </div>
+        <span class="hint" id="keyHint"></span>
+        <label class="check" style="margin-top:6px"><input type="checkbox" id="rememberKey"> <span>Remember this key on this computer <span class="hint">(stored in this browser only; leave unchecked on shared computers)</span></span></label>
+      </div>
+      <div class="field span2">
+        <label for="modelSelect">Model</label>
+        <div class="input-row">
+          <select id="modelSelect"></select>
+          <button class="btn" type="button" id="btnConnect">Test key &amp; load models</button>
+        </div>
+        <input type="text" id="modelCustom" placeholder="Type a model ID, then press Enter" hidden>
+        <div id="connectResult" class="hint"></div>
+      </div>
+    </div>
+    <details class="adv">
+      <summary>Advanced settings</summary>
+      <div class="grid2">
+        <div class="field">
+          <label for="effort">Reasoning depth</label>
+          <select id="effort">
+            <option value="low">Fast (low)</option>
+            <option value="medium">Standard (medium)</option>
+            <option value="high">Thorough (high), recommended</option>
+            <option value="max">Maximum</option>
+          </select>
+          <span class="hint">Deeper reasoning is slower and costs more, but produces more careful analysis. Applied where the model supports it.</span>
+        </div>
+        <div class="field">
+          <label for="maxOut">Maximum output tokens <span class="opt">(optional)</span></label>
+          <input type="number" id="maxOut" min="1024" step="1024" placeholder="Automatic">
+          <span class="hint">Leave blank for the model's default. Raise it if a draft is cut off.</span>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="card" id="manualCard" hidden>
+    <h3>Copy &amp; paste mode</h3>
+    <p class="sub">No API key needed. At each step the app assembles the complete prompt (instructions, case details and the text of every document). Copy it into Claude.ai, Gemini, ChatGPT or your institution's approved AI tool, then paste the AI's reply back here. The app splits the reply into the memo, source check and verification table, and exports the memo to Word.</p>
+    <div class="callout info mb0">Scanned PDFs with no selectable text can't be included as text. The app lists any such files so you can attach them in the AI chat yourself.</div>
+  </div>
+
+  <div class="callout warn" id="privacyNote"></div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h3>Drafting instructions</h3>
+        <p class="sub mb0">The app drafts from your promotion-memo prompt: source and accuracy rules, analytical expectations, tone, memo structure and the required outputs. You can review or adjust it.</p>
+      </div>
+      <button class="btn" type="button" id="btnEditPrompt">View / edit instructions</button>
+    </div>
+    <div class="kv" id="promptStatus"></div>
+  </div>
+
+  <div class="panel-nav"><span></span><button class="btn primary lg" type="button" data-goto="case">Continue to case details →</button></div>
+</section>
+
+<!-- =============================================================== 2. CASE -->
+<section class="panel" id="panel-case" hidden>
+  <h2>Case details</h2>
+  <p class="lead">These drafting parameters go to the AI with the documents. Leave a field blank if the materials already establish it. The AI takes it from the record or inserts a bracketed placeholder.</p>
+  <div class="card">
+    <div class="grid2">
+      <div class="field"><label for="c_candidate">Candidate name</label><input type="text" id="c_candidate" data-case="candidate" placeholder="e.g., Dr. Jane Q. Doe"></div>
+      <div class="field"><label for="c_currentTitle">Current title</label><input type="text" id="c_currentTitle" data-case="currentTitle" placeholder="e.g., Assistant Professor of Finance"></div>
+      <div class="field"><label for="c_department">Department / program</label><input type="text" id="c_department" data-case="department" placeholder="e.g., Department of Finance"></div>
+      <div class="field"><label for="c_school">School / college</label><input type="text" id="c_school" data-case="school" data-office="1" placeholder="e.g., School of Business"></div>
+      <div class="field">
+        <label for="c_action">Proposed action</label>
+        <select id="c_action" data-case="action"></select>
+        <input type="text" id="c_actionOther" data-case="actionOther" placeholder="Describe the proposed action" hidden>
+      </div>
+      <div class="field"><label for="c_targetLength">Target length</label><input type="text" id="c_targetLength" data-case="targetLength" data-office="1" placeholder="e.g., 1,800–2,400 words (about 4–5 pages)"></div>
+      <div class="field"><label for="c_author">Memo from (dean's name and title)</label><input type="text" id="c_author" data-case="author" data-office="1" placeholder="e.g., Jordan Smith, Dean"></div>
+      <div class="field"><label for="c_recipient">Memo to (recipient's name and title)</label><input type="text" id="c_recipient" data-case="recipient" data-office="1" placeholder="e.g., Alex Rivera, Provost and Executive Vice President"></div>
+      <div class="field"><label for="c_memoDate">Memo date</label><input type="date" id="c_memoDate" data-case="memoDate"></div>
+      <div class="field"><label for="c_effectiveDate">Effective date <span class="opt">(if applicable)</span></label><input type="date" id="c_effectiveDate" data-case="effectiveDate"></div>
+      <div class="field span2">
+        <label for="c_preferredExample">Preferred example memo</label>
+        <select id="c_preferredExample" data-case="preferredExample"></select>
+        <span class="hint">Add example memos in the Documents step. The AI selects the closest match unless you pick one here.</span>
+      </div>
+      <div class="field span2"><label for="c_criteriaTerms">Required institutional criteria or terminology <span class="opt">(optional)</span></label><textarea id="c_criteriaTerms" data-case="criteriaTerms" rows="2" placeholder="e.g., Use the school's terms 'excellent' in research and 'highly satisfactory' in teaching. Leave blank to rely on the attached criteria."></textarea></div>
+      <div class="field span2"><label for="c_votes">Vote totals <span class="opt">(optional, if not in the documents)</span></label><textarea id="c_votes" data-case="votes" rows="2" placeholder="e.g., Department faculty: 14 yes, 1 no, 1 abstain. School P&T committee: 7 yes, 0 no."></textarea></div>
+      <div class="field span2"><label for="c_otherInstructions">Other instructions <span class="opt">(optional)</span></label><textarea id="c_otherInstructions" data-case="otherInstructions" rows="3" placeholder="Anything else the drafter should know: emphasis, sensitivities, context about the department, preferred phrasing…"></textarea></div>
+    </div>
+    <p class="hint" style="margin:14px 0 0">The school, target length, dean and recipient are remembered on this computer for future cases.</p>
+  </div>
+  <div class="panel-nav"><button class="btn" type="button" data-goto="setup">← AI setup</button><button class="btn primary lg" type="button" data-goto="docs">Continue to documents →</button></div>
+</section>
+
+<!-- =============================================================== 3. DOCUMENTS -->
+<section class="panel" id="panel-docs" hidden>
+  <h2>Documents</h2>
+  <p class="lead">Add files by dragging them in or clicking a drop area. Accepted: PDF, Word (.docx), Excel (.xlsx), CSV and text. Text is extracted in this browser; nothing leaves your computer until you run the analysis or draft.</p>
+
+  <div class="doc-sections">
+    <div class="card" id="sec-input">
+      <div class="card-head">
+        <div>
+          <h3>1 · Inputs: candidate materials &amp; reviews <span class="tag accent">Factual record</span></h3>
+          <p class="sub mb0">CV; research, teaching and service statements; department, chair and committee letters; external letters, teaching evaluations, vote records.</p>
+        </div>
+        <button class="btn sm" type="button" data-paste="input">+ Paste text</button>
+      </div>
+      <div class="dropzone" data-drop="input" tabindex="0" role="button" aria-label="Add candidate materials"><strong>Drop files here</strong> or click to choose<span class="hint">Each file's type is guessed from its name. Check it in the menu on each row.</span></div>
+      <div class="checklist" id="inputChecklist"></div>
+      <div class="file-list" id="list-input"></div>
+    </div>
+
+    <div class="card" id="sec-template">
+      <div class="card-head">
+        <div>
+          <h3>2 · Templates: previous dean's memos <span class="tag">Style models only</span></h3>
+          <p class="sub mb0">Prior memos for successful cases. The AI uses them for structure, tone and terminology, never as facts about this candidate.</p>
+        </div>
+        <div class="btn-row">
+          <label class="minitoggle" title="Keep these files in this browser so they load automatically next time"><input type="checkbox" id="libTemplate"> Remember on this computer</label>
+          <button class="btn sm" type="button" data-paste="template">+ Paste text</button>
+        </div>
+      </div>
+      <div class="dropzone" data-drop="template" tabindex="0" role="button" aria-label="Add example memos"><strong>Drop example memos here</strong> or click to choose<span class="hint">Add a short note to each (e.g., discipline, rank, year) to help the AI pick the closest match.</span></div>
+      <div class="file-list" id="list-template"></div>
+    </div>
+
+    <div class="card" id="sec-criteria">
+      <div class="card-head">
+        <div>
+          <h3>3 · Criteria: promotion &amp; tenure standards</h3>
+          <p class="sub mb0">University, school and department criteria. Without criteria, the AI won't invent institutional standards.</p>
+        </div>
+        <div class="btn-row">
+          <label class="minitoggle" title="Keep these files in this browser so they load automatically next time"><input type="checkbox" id="libCriteria"> Remember on this computer</label>
+          <button class="btn sm" type="button" data-paste="criteria">+ Paste text</button>
+        </div>
+      </div>
+      <div class="dropzone" data-drop="criteria" tabindex="0" role="button" aria-label="Add criteria documents"><strong>Drop criteria documents here</strong> or click to choose</div>
+      <div class="file-list" id="list-criteria"></div>
+    </div>
+
+    <div class="summarybar" id="docSummary"></div>
+    <div id="docWarnings"></div>
+  </div>
+  <input type="file" id="filePicker" multiple hidden accept=".pdf,.docx,.xlsx,.csv,.tsv,.txt,.md,.html,.htm,.json,application/pdf">
+  <div class="panel-nav"><button class="btn" type="button" data-goto="case">← Case details</button><button class="btn primary lg" type="button" data-goto="analysis">Continue to analysis →</button></div>
+</section>
+
+<!-- =============================================================== 4. ANALYSIS -->
+<section class="panel" id="panel-analysis" hidden>
+  <h2>Pre-draft analysis <span class="tag ok" style="font-size:11px">Recommended</span></h2>
+  <p class="lead">Before drafting, the AI reviews every document and prepares an analysis: the conventions in the example memos, the closest example, an evidence inventory, a comparison with the criteria, and any inconsistencies or gaps. It then lists questions where a missing fact or conflict would materially affect the memo. Your answers go into the draft.</p>
+
+  <div class="card">
+    <div class="btn-row" id="analysisActions"></div>
+    <div class="hint" id="analysisHint" style="margin-top:10px"></div>
+  </div>
+
+  <div class="stream" id="analysisStream" hidden>
+    <div class="stream-head"><span class="spinner"></span><span class="stream-status">Starting…</span><span class="stream-meta"></span><button class="btn sm stream-stop" type="button">Stop</button></div>
+    <div class="stream-body md"></div>
+    <div class="stream-usage"></div>
+  </div>
+
+  <div id="analysisResult" hidden>
+    <div class="callout warn" id="analysisStale" hidden>Documents have changed since this analysis was run. Run it again to include the changes, or draft directly. Your answers will still be passed to the drafter.</div>
+    <div class="card">
+      <div class="card-head">
+        <div><h3>Clarification questions</h3><p class="sub mb0">Answer what you can. Unanswered items are handled with qualified wording and flagged in the source check.</p></div>
+      </div>
+      <div class="q-list" id="questions"></div>
+      <div class="field" style="margin-top:14px">
+        <label for="analysisNotes">Additional guidance for the draft <span class="opt">(optional)</span></label>
+        <textarea id="analysisNotes" rows="3" placeholder="e.g., Emphasize the cross-disciplinary grant work; treat the 2022 teaching dip as resolved."></textarea>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div><h3>Analysis</h3><p class="sub mb0" id="analysisMeta"></p></div><button class="btn sm" type="button" id="btnCopyAnalysis">Copy</button></div>
+      <div class="md analysis-body" id="analysisMd"></div>
+    </div>
+  </div>
+
+  <div class="panel-nav"><button class="btn" type="button" data-goto="docs">← Documents</button><button class="btn primary lg" type="button" data-goto="draft">Continue to draft →</button></div>
+</section>
+
+<!-- =============================================================== 5. DRAFT -->
+<section class="panel" id="panel-draft" hidden>
+  <h2>Draft &amp; revise</h2>
+  <p class="lead" id="draftLead">Generate the memo with its source check and verification table. Edit the memo directly on the page, ask the AI for revisions, then export to Word.</p>
+
+  <div class="card">
+    <div class="btn-row" id="draftActions"></div>
+    <div class="hint" id="draftHint" style="margin-top:10px"></div>
+  </div>
+
+  <div class="stream" id="draftStream" hidden>
+    <div class="stream-head"><span class="spinner"></span><span class="stream-status">Starting…</span><span class="stream-meta"></span><button class="btn sm stream-stop" type="button">Stop</button></div>
+    <div class="stream-body md"></div>
+    <div class="stream-usage"></div>
+  </div>
+
+  <div class="empty" id="draftEmpty">
+    <h3>No draft yet</h3>
+    <p class="mb0">When you generate a draft, the memo appears here as an editable page, with the source check and verification table in separate tabs.</p>
+  </div>
+
+  <div id="draftResult" hidden>
+    <div class="toolbar">
+      <div class="btn-row">
+        <label class="label" for="versionSelect" style="font-weight:600">Version</label>
+        <select id="versionSelect" style="width:auto;max-width:420px"></select>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" type="button" id="btnDocx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Memo (.docx)</button>
+        <button class="btn" type="button" id="btnPacket" title="Source check, verification table and analysis as a separate Word file">Review packet (.docx)</button>
+        <button class="btn" type="button" id="btnCopyMemo">Copy memo</button>
+        <button class="btn" type="button" id="btnPrint">Print</button>
+      </div>
+    </div>
+    <div class="callout warn" id="draftWarn" hidden></div>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="memo" aria-selected="true">Memo</button>
+      <button type="button" role="tab" data-tab="check" aria-selected="false">Source check <span class="count" id="checkCount"></span></button>
+      <button type="button" role="tab" data-tab="verify" aria-selected="false">Verification table <span class="count" id="verifyCount"></span></button>
+      <button type="button" role="tab" data-tab="raw" aria-selected="false">Full response</button>
+    </div>
+    <div data-tabpanel="memo">
+      <div class="paper-wrap">
+        <div class="editbar" aria-label="Formatting">
+          <button class="iconbtn" type="button" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+          <button class="iconbtn" type="button" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+          <button class="iconbtn" type="button" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+          <span class="sep"></span>
+          <button class="iconbtn" type="button" data-cmd="insertUnorderedList" title="Bulleted list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></svg></button>
+          <button class="iconbtn" type="button" data-cmd="undo" title="Undo (Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+          <button class="iconbtn" type="button" data-cmd="redo" title="Redo (Ctrl+Y)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+          <span class="sep"></span>
+          <select id="expFont" title="Font for the editor and Word export" style="width:auto;min-height:32px;padding:3px 26px 3px 8px;font-size:13px">
+            <option>Times New Roman</option><option>Garamond</option><option>Georgia</option><option>Cambria</option><option>Calibri</option><option>Arial</option>
+          </select>
+          <select id="expSize" title="Font size" style="width:auto;min-height:32px;padding:3px 26px 3px 8px;font-size:13px"><option value="11">11 pt</option><option value="12">12 pt</option></select>
+          <label class="minitoggle"><input type="checkbox" id="expPageNums"> Page numbers</label>
+          <span class="wc" id="wordCount"></span>
+        </div>
+        <article class="paper" id="memoEditor" contenteditable="true" spellcheck="true" aria-label="Memo draft, editable"></article>
+      </div>
+      <p class="hint" style="margin-top:8px">Click into the memo to edit. Your edits are kept with this version, used in the Word export, and sent to the AI with any revision request.</p>
+    </div>
+    <div data-tabpanel="check" hidden><div class="card"><div class="callout info mt0">Editorial aid for your review. It is not part of the memo.</div><div class="md" id="checkMd"></div></div></div>
+    <div data-tabpanel="verify" hidden><div class="card"><div class="callout info mt0">Each quantitative or status-sensitive statement in the draft, with its supporting source. Document IDs: D = candidate materials, T = example memos, C = criteria.</div><div class="md" id="verifyMd"></div><div class="kv" id="docKey" style="margin-top:12px"></div></div></div>
+    <div data-tabpanel="raw" hidden><div class="raw" id="rawOut"></div></div>
+
+    <div class="card" style="margin-top:18px">
+      <h3>Request revisions</h3>
+      <p class="sub">Describe what to change. The AI receives your current edited memo and the full case file, and returns a new version. Earlier versions stay available in the Version menu.</p>
+      <div class="revise-chips" id="reviseChips">
+        <button type="button">Tighten to the target length</button>
+        <button type="button">Make the research section more analytical and less descriptive</button>
+        <button type="button">Address the concerns in the record more directly</button>
+        <button type="button">Align terminology with the supplied criteria</button>
+        <button type="button">Follow the preferred example memo's structure more closely</button>
+        <button type="button">Make the opening recommendation more concise</button>
+      </div>
+      <textarea id="reviseText" rows="3" placeholder="e.g., Expand the discussion of the candidate's NSF grant and shorten the service section by about a third."></textarea>
+      <div class="btn-row" style="margin-top:10px" id="reviseActions"></div>
+    </div>
+  </div>
+
+  <div class="panel-nav"><button class="btn" type="button" data-goto="analysis">← Analysis</button><span></span></div>
+</section>
+</main>
+
+<!-- =============================================================== dialogs -->
+<dialog id="dlgText">
+  <form method="dialog" class="dlg" id="dlgTextForm">
+    <div class="dlg-head"><h3 id="dlgTextTitle">Document text</h3><button class="iconbtn" value="cancel" title="Close">✕</button></div>
+    <div class="dlg-body">
+      <div class="grid2" id="dlgTextNewFields">
+        <div class="field"><label for="dlgTextName">Name</label><input type="text" id="dlgTextName" placeholder="e.g., Chair letter (email)"></div>
+        <div class="field" id="dlgTextTypeWrap"><label for="dlgTextType">Document type</label><select id="dlgTextType"></select></div>
+      </div>
+      <div class="hint" id="dlgTextMeta"></div>
+      <textarea class="big" id="dlgTextArea" spellcheck="false"></textarea>
+      <div class="hint">You can correct extraction errors here. The AI receives exactly this text. PDF page breaks appear as [Page N].</div>
+    </div>
+    <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn primary" value="save" id="dlgTextSave">Save</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlgPrompt">
+  <form method="dialog" class="dlg">
+    <div class="dlg-head"><h3>Drafting instructions</h3><button class="iconbtn" value="cancel" title="Close">✕</button></div>
+    <div class="dlg-body">
+      <div class="callout info mt0">These instructions are sent as the AI's system prompt. <b>{{ACTION}}</b> is replaced with the proposed action from Case details (e.g., “promotion to associate professor with tenure”). The app adds its own short section on output formatting so it can split the reply into the memo, source check and verification table.</div>
+      <textarea class="big" id="promptArea" spellcheck="false"></textarea>
+    </div>
+    <div class="dlg-foot"><button class="btn" type="button" id="btnPromptReset">Restore default</button><span style="flex:1"></span><button class="btn" value="cancel">Cancel</button><button class="btn primary" value="save" id="btnPromptSave">Save instructions</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlgCompiled">
+  <form method="dialog" class="dlg">
+    <div class="dlg-head"><h3 id="compiledTitle">Prompt</h3><button class="iconbtn" value="cancel" title="Close">✕</button></div>
+    <div class="dlg-body">
+      <div id="compiledIntro" class="callout info mt0"></div>
+      <div class="seg" id="compiledSeg" hidden><button type="button" data-mode="full" aria-pressed="true">Full prompt (new chat)</button><button type="button" data-mode="followup" aria-pressed="false">Follow-up only (same chat)</button></div>
+      <div id="compiledAttach"></div>
+      <textarea class="big" id="compiledArea" readonly spellcheck="false"></textarea>
+      <div class="hint" id="compiledMeta"></div>
+    </div>
+    <div class="dlg-foot"><button class="btn" type="button" id="btnCompiledDownload">Download .txt</button><button class="btn" type="button" id="btnCompiledCopy">Copy to clipboard</button><span style="flex:1"></span><button class="btn primary" type="button" id="btnCompiledPaste" hidden>Paste the AI's reply…</button><button class="btn" value="cancel">Close</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlgImport">
+  <form method="dialog" class="dlg">
+    <div class="dlg-head"><h3 id="importTitle">Paste the AI's reply</h3><button class="iconbtn" value="cancel" title="Close">✕</button></div>
+    <div class="dlg-body">
+      <div class="callout info mt0" id="importIntro">Paste the AI's complete reply, including the section markers (lines such as “=== DEAN'S MEMO ===”).</div>
+      <textarea class="big" id="importArea" spellcheck="false" placeholder="Paste the full reply here"></textarea>
+    </div>
+    <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn primary" value="import" id="btnImportGo">Import reply</button></div>
+  </form>
+</dialog>
+
+<div id="toasts" aria-live="polite"></div>
+<input type="file" id="caseFile" accept=".json,application/json" hidden>
+
+<script>
+'use strict';
+/* =====================================================================
+   P&T Memo Drafter: single-file web app.
+   Documents are read in the browser. When the user runs a step, the request
+   goes from this page straight to the chosen AI provider. There is no other server.
+   ===================================================================== */
+
+/* ------------------------------------------------------------------ external libraries (pinned, integrity-checked, loaded on demand) */
+const LIBS = {
+  marked:  { src: 'https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js', integrity: 'sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi', global: 'marked' },
+  purify:  { src: 'https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js', integrity: 'sha384-+VfUPEb0PdtChMwmBcBmykRMDd+v6D/oFmB3rZM/puCMDYcIvF968OimRh4KQY9a', global: 'DOMPurify' },
+  pdfjs:   { src: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js', integrity: 'sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e', global: 'pdfjsLib',
+             worker: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js' },
+  mammoth: { src: 'https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js', integrity: 'sha384-/cXAMbzovUIKbBERjPmR3SnPTh8siWr5lsvFYj1Uq4XP0yaJUZJmsh0YXyGv5P0y', global: 'mammoth' },
+  docx:    { src: 'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js', integrity: 'sha384-4xaIisuLEy2lo2HkB2C4rEf7v8jbTb2kuogX6TkuEt9feTWKBSFSOzsqNNbV+sKh', global: 'docx' },
+};
+const libPromises = {};
+function loadLib(name) {
+  const L = LIBS[name];
+  if (window[L.global]) return Promise.resolve(window[L.global]);
+  if (!libPromises[name]) {
+    libPromises[name] = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = L.src; s.integrity = L.integrity; s.crossOrigin = 'anonymous';
+      s.onload = () => window[L.global] ? resolve(window[L.global]) : reject(new Error(`The ${name} library loaded but did not initialize.`));
+      s.onerror = () => { delete libPromises[name]; s.remove(); reject(new Error(`Could not load a required component (${name}) from cdn.jsdelivr.net. Check your internet connection.`)); };
+      document.head.appendChild(s);
+    });
+  }
+  return libPromises[name];
+}
+
+/* ------------------------------------------------------------------ constants */
+const PROVIDERS = {
+  anthropic: { name: 'Claude', org: 'Anthropic', keyLabel: 'Anthropic API key', placeholder: 'sk-ant-…',
+    help: 'Create a key in the Anthropic Console: <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com → API keys</a>.',
+    privacy: 'Documents go directly from this browser to Anthropic\'s API. Under Anthropic\'s commercial API terms, inputs are not used for model training by default.' },
+  gemini: { name: 'Gemini', org: 'Google', keyLabel: 'Google Gemini API key', placeholder: 'AIza…',
+    help: 'Create a key in Google AI Studio: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com → Get API key</a>.',
+    privacy: 'Documents go directly from this browser to Google\'s Gemini API. <b>On Google\'s unpaid tier, submitted content may be used to improve Google\'s products.</b> Use a billing-enabled (paid-tier) key for confidential personnel files.' },
+  openai: { name: 'OpenAI', org: 'OpenAI', keyLabel: 'OpenAI API key', placeholder: 'sk-…',
+    help: 'Create a key in the OpenAI dashboard: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com → API keys</a>.',
+    privacy: 'Documents go directly from this browser to OpenAI\'s API. The app sends requests with storage turned off (<code>store: false</code>). API data is not used for model training by default.' },
+  manual: { name: 'Copy & paste', org: '', privacy: 'In copy &amp; paste mode, nothing is sent anywhere by this app. You decide which AI tool receives the prompt.' },
+};
+
+// Built-in choices, used until "Test key & load models" fetches the live list from the provider.
+const MODEL_PRESETS = {
+  anthropic: [
+    { id: 'claude-opus-5-5', label: 'Claude Opus 5.5 (recommended)' },
+    { id: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5 (faster, lower cost)' },
+    { id: 'claude-fable-5-1', label: 'Claude Fable 5.1 (most capable, premium price)' },
+    { id: 'claude-haiku-5-5', label: 'Claude Haiku 5.5 (fastest, lowest cost)' },
+  ],
+  openai: [
+    { id: 'gpt-5.6', label: 'GPT-5.6' },
+    { id: 'gpt-5', label: 'GPT-5' },
+    { id: 'gpt-5-mini', label: 'GPT-5 mini (faster, lower cost)' },
+  ],
+  gemini: [
+    { id: 'gemini-pro-latest', label: 'Gemini Pro (latest)' },
+    { id: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro (preview)' },
+    { id: 'gemini-flash-latest', label: 'Gemini Flash (latest, faster)' },
+  ],
+};
+
+const ACTIONS = [
+  { value: 'promotion to associate professor with tenure', label: 'Promotion to associate professor with tenure' },
+  { value: 'promotion to professor', label: 'Promotion to professor' },
+  { value: 'tenure at the rank of associate professor', label: 'Tenure (already at associate rank)' },
+  { value: 'promotion to clinical associate professor', label: 'Promotion to clinical associate professor' },
+  { value: 'promotion to clinical professor', label: 'Promotion to clinical professor' },
+  { value: 'promotion to senior lecturer', label: 'Promotion to senior lecturer' },
+  { value: 'promotion to teaching professor', label: 'Promotion to teaching professor' },
+  { value: 'other', label: 'Other…' },
+];
+
+const INPUT_TYPES = [
+  'Curriculum vitae', 'Research statement', 'Teaching statement', 'Service statement', 'Personal statement (combined)',
+  'Department evaluation / recommendation', 'Department chair letter', 'Faculty review committee letter',
+  'External review letter', 'Teaching evaluations', 'Peer teaching observation', 'Prior review (e.g., third-year review)',
+  'Vote totals / review record', 'Other supporting material',
+];
+const CRITERIA_TYPES = ['University criteria', 'School / college criteria', 'Department criteria', 'Other policy / guidance'];
+const TEMPLATE_TYPE = "Example dean's memo";
+const CHECKLIST = [
+  { type: 'Curriculum vitae', label: 'CV' },
+  { type: 'Research statement', label: 'Research statement', alt: 'Personal statement (combined)' },
+  { type: 'Teaching statement', label: 'Teaching statement', alt: 'Personal statement (combined)' },
+  { type: 'Service statement', label: 'Service statement', alt: 'Personal statement (combined)' },
+  { type: 'Department evaluation / recommendation', label: 'Department evaluation' },
+  { type: 'Department chair letter', label: 'Chair letter' },
+  { type: 'Faculty review committee letter', label: 'Committee letter' },
+  { type: 'External review letter', label: 'External letters', optional: true },
+  { type: 'Teaching evaluations', label: 'Teaching evaluations', optional: true },
+  { type: 'Vote totals / review record', label: 'Vote record', optional: true },
+];
+
+/* ------------------------------------------------------------------ the drafting prompt (from the dean's office prompt) */
+const DEFAULT_PROMPT = `You are assisting a dean in drafting a formal memorandum supporting a faculty candidate's {{ACTION}}.
+
+Your task is to prepare a persuasive, detailed, institutionally appropriate dean's memo based exclusively on the materials provided. The memo should present an independent, balanced evaluation of the candidate's record while ultimately making a clear recommendation in support of {{ACTION}}.
+
+INPUT MATERIALS
+
+You will receive the following materials:
+
+1. The candidate's curriculum vitae
+2. The candidate's research or scholarly statement
+3. The candidate's teaching statement
+4. The candidate's service statement
+5. The department's evaluation or recommendation letter
+6. The department chair's letter
+7. The faculty review committee's letter
+8. Examples of previous dean's memos for faculty who were successfully promoted and/or tenured
+9. If available, the institution's promotion and tenure criteria, relevant school or college standards, external-review letters, teaching evaluations, and vote totals
+
+Treat the candidate's materials and evaluative letters as the factual record. Treat the previous dean's memos as models for organization, tone, level of detail, rhetorical style, and customary terminology—not as factual sources for the present candidate.
+
+PRE-DRAFT ANALYSIS
+
+Before drafting the memo:
+
+1. Review all materials in full.
+2. Identify the recurring structure, tone, formatting conventions, and level of detail used in the example dean's memos.
+3. Determine which example or combination of examples is the closest structural match for the present case.
+4. Construct an evidence inventory covering:
+   - appointment history and professional trajectory;
+   - discipline, specialization, and scholarly agenda;
+   - research or creative accomplishments;
+   - publication record and the significance of major works;
+   - scholarly quality, originality, impact, visibility, and trajectory;
+   - grants, awards, fellowships, invited presentations, or other forms of recognition;
+   - evidence of an independent scholarly identity;
+   - teaching contributions, effectiveness, innovation, and mentorship;
+   - departmental, institutional, disciplinary, professional, and public service;
+   - leadership and contributions to the institution;
+   - assessments and recommendations made at each prior level of review;
+   - recorded votes, if supplied;
+   - concerns, qualifications, or mixed evidence raised anywhere in the record; and
+   - the candidate's future trajectory and likely continuing contributions.
+5. Compare the record with any supplied promotion and tenure criteria. Do not invent institutional standards when none have been provided.
+6. Note material inconsistencies, ambiguities, unsupported claims, missing information, or discrepancies among the CV, statements, and evaluative letters.
+
+If a missing fact or unresolved conflict would materially affect the recommendation, ask concise clarification questions before drafting. Do not ask about minor matters that can be handled through careful, qualified wording.
+
+SOURCE AND ACCURACY RULES
+
+- Use only information supported by the provided materials.
+- Do not invent publications, rankings, dates, grants, awards, courses, evaluation results, vote totals, quotations, or institutional standards.
+- Verify names, titles, dates, publication status, institutional affiliations, and quantitative claims against the source materials.
+- Distinguish accurately among work that is published, accepted, forthcoming, under contract, under review, in preparation, or proposed.
+- Do not describe a work as peer-reviewed unless the materials establish that fact.
+- Do not characterize a journal, press, conference, grant, or award as prestigious, selective, leading, or highly ranked unless the record supports that characterization.
+- Attribute evaluative judgments when appropriate. For example, distinguish between conclusions reached by the department, the chair, the faculty review committee, external reviewers, students, and the dean.
+- Paraphrase source material in a cohesive dean's voice. Use direct quotations only when a brief quotation is especially probative and can be verified precisely.
+- If sources conflict, do not silently choose one version. Resolve the discrepancy if possible or use appropriately qualified language.
+- Do not transfer facts, names, arguments, or distinctive candidate-specific language from the example memos.
+- Preserve confidentiality. Include only information appropriate for an internal promotion and tenure memorandum.
+
+ANALYTICAL EXPECTATIONS
+
+The memo must do more than summarize the file. It should explain why the evidence supports the proposed action.
+
+Research and scholarship:
+- Describe the candidate's central scholarly questions, contributions, methods, and intellectual development in language accessible to senior academic readers outside the candidate's narrow specialization.
+- Identify the candidate's most important scholarly contributions and explain their significance.
+- Assess the quality, coherence, originality, productivity, impact, visibility, and trajectory of the research program.
+- Where supported, explain the candidate's individual contribution to collaborative work and the evidence of scholarly independence.
+- Place quantitative information in meaningful context rather than merely listing totals.
+- Avoid overstating bibliometrics, journal reputation, press standing, grants, or other indicators.
+- Explain why the record demonstrates readiness for {{ACTION}}, rather than merely future promise.
+
+Teaching:
+- Describe the scope of the candidate's teaching, including undergraduate, graduate, clinical, laboratory, studio, or other instruction as applicable.
+- Evaluate teaching effectiveness using the available combination of student feedback, peer observations, course development, curricular innovation, advising, and mentorship.
+- Acknowledge material variation or concerns in the teaching record and explain how the full record should be interpreted.
+- Discuss the candidate's contributions to the curriculum and to student development.
+
+Service:
+- Distinguish routine participation from sustained, substantive, or leadership-level service.
+- Address contributions at the department, school or college, university, disciplinary, professional, and public levels, as supported by the record.
+- Explain the value or impact of major service contributions without exaggeration.
+- Evaluate service in relation to the candidate's career stage and assigned responsibilities.
+
+Prior reviews:
+- Accurately synthesize the conclusions of the department, chair, faculty review committee, and any other supplied evaluators.
+- Report vote totals exactly when provided.
+- Do not imply unanimity if the record contains abstentions, negative votes, reservations, or divided assessments.
+- Address substantive concerns fairly and proportionately. Explain why they do or do not alter the overall judgment.
+- Preserve the dean's independent evaluative voice rather than simply repeating the conclusions of earlier reviewers.
+
+TONE AND STYLE
+
+Write in the voice of a dean addressing the appropriate senior academic decision-maker. The tone should be:
+- formal, authoritative, and collegial;
+- evidence-based and analytically persuasive;
+- affirmative without being promotional or inflated;
+- candid about genuine limitations or concerns;
+- respectful of disciplinary differences;
+- understandable to readers who are not specialists in the candidate's field; and
+- consistent with the strongest conventions found in the example memos.
+
+Match the examples' general organization, pacing, paragraph length, transitions, headings, salutation, closing, and approximate level of detail. Do not imitate awkward wording, reproduce lengthy passages, or copy language unique to another candidate.
+
+Prefer precise prose and connected analysis over lists. Avoid generic praise such as "excellent scholar" or "outstanding teacher" unless it is immediately supported by specific evidence. Avoid repeating the same accomplishments in multiple sections unless their relevance differs.
+
+MEMO STRUCTURE
+
+Unless the examples establish a materially different institutional format, use this structure:
+
+1. Memorandum heading
+   - To
+   - From
+   - Date
+   - Subject or Re
+2. Opening recommendation
+   - Identify the candidate, current title, department or program, and proposed action.
+   - State clearly that the dean recommends {{ACTION}}.
+   - Briefly identify the principal grounds for the recommendation.
+3. Appointment and professional context
+   - Summarize the candidate's academic background, appointment history, disciplinary position, and relevant workload or institutional context.
+4. Research, scholarship, or creative activity
+   - Explain the scholarly agenda.
+   - Analyze major contributions and outputs.
+   - Discuss quality, significance, independence, impact, recognition, and trajectory.
+   - Incorporate relevant assessments from the review record.
+5. Teaching, advising, and mentorship
+   - Analyze the candidate's instructional contributions and effectiveness.
+   - Discuss course and curriculum development, pedagogical innovation, advising, mentorship, and evidence of student learning or success where documented.
+6. Service and institutional contributions
+   - Evaluate the substance, level, and impact of the candidate's service and leadership.
+7. Review process and assessments
+   - Synthesize the department, chair, faculty review committee, and other relevant recommendations.
+   - Include exact votes and material reservations when provided.
+   - This material may instead be integrated into the research, teaching, and service sections if that better matches the examples.
+8. Overall assessment
+   - Weigh the record as a whole against the supplied standards.
+   - Address any significant concerns or qualifications directly.
+   - Explain why the candidate has met the standard for {{ACTION}} and why the record indicates continued contribution and scholarly development.
+9. Final recommendation
+   - Conclude with an unambiguous recommendation for {{ACTION}}.
+   - Use the customary closing and signature format shown in the examples.
+
+OUTPUT REQUIREMENTS
+
+Produce:
+
+A. A brief "source check" section for the dean's review, separate from the memo, listing:
+- any factual conflicts or unclear items;
+- any important missing information;
+- claims that require verification;
+- material concerns raised in the record; and
+- any places where you used qualified language because the evidence was limited.
+
+B. A complete draft of the dean's memo, ready for review and editing.
+
+C. A short verification table listing every quantitative or status-sensitive statement in the draft—such as publication totals, grant amounts, dates, vote counts, evaluation figures, and publication status—together with the source document supporting it.
+
+The source check and verification table are editorial aids and must not appear inside the final memo.
+
+When the evidence supports more than one reasonable framing, choose the framing that is most consistent with the supplied standards and example memos. Flag consequential judgment calls in the source check rather than interrupting the draft with editorial notes.`;
+
+// Fixed protocol appended to the (editable) instructions so replies can be split reliably.
+const APP_PROTOCOL = `HOW THIS SESSION WORKS
+
+You are working inside a drafting application used by the dean's office. The case file arrives in the first message, grouped into <candidate_materials> (document IDs D1, D2, …), <example_memos> (T1, T2, …) and <promotion_criteria> (C1, C2, …). Some documents may be attached as PDF files instead of text; each is labeled with its ID. PDF page breaks in extracted text are marked [Page N]. Case parameters from the dean's office appear in <case_parameters>. Each request ends with a TASK section that states exactly what to return.
+
+Always use the section markers exactly as specified in the TASK, each on a line by itself, because the application splits your reply on them. Write in Markdown. Do not wrap the reply in code fences, and do not add commentary before the first marker.`;
+
+const FORMAT_DELIVERABLES = `Return exactly three parts, each beginning with its marker line written exactly as shown, on a line by itself:
+
+=== SOURCE CHECK ===
+Markdown bullet lists under these bold labels: **Questions for the dean** (only if any remain open), **Factual conflicts or unclear items**, **Important missing information**, **Claims requiring verification**, **Material concerns raised in the record**, **Qualified language used**, and **Consequential judgment calls**. Write "None identified." under any label with nothing to report. Cite document IDs (and page numbers where available).
+
+=== DEAN'S MEMO ===
+The complete memo in Markdown, ready for the dean to edit. Begin with the memorandum heading, one field per line, in the form "**TO:** …", "**FROM:** …", "**DATE:** …", "**RE:** …" (follow the example memos if they use different labels), then a horizontal rule (---). Use section headings only where the example memos use them. Use the customary closing and signature format from the examples. The memo must not contain document IDs, citations to the case file, editorial notes, or comments to the dean. The only bracketed text allowed is a placeholder such as [DATE] for information that is genuinely unavailable.
+
+=== VERIFICATION TABLE ===
+A Markdown table with the columns | # | Statement in the draft | Figure or status | Source (document ID, file, page) | Note |. List every quantitative or status-sensitive statement in the memo: publication counts and status, grant amounts, dates, appointment history, titles, vote counts, evaluation figures, and similar. Use the Note column to flag anything inferred, conflicting or unverified.`;
+
+const TASK_ANALYSIS = `TASK: PRE-DRAFT ANALYSIS (do not draft the memo yet)
+
+Carry out the pre-draft analysis described in your instructions. Be specific, and cite the supporting document ID (and page number where available) for each fact. Return exactly two parts, each beginning with its marker line written exactly as shown, on a line by itself:
+
+=== ANALYSIS ===
+Markdown with these subsections:
+### 1. Conventions in the example memos
+Structure and headings, heading block, salutation and closing, tone, paragraph length, approximate length, recurring terminology.
+### 2. Closest structural match
+Which example memo(s) fit this case best, and why.
+### 3. Evidence inventory
+Organized by the categories listed in your instructions, citing document IDs.
+### 4. Comparison with the promotion and tenure criteria
+Assess only against supplied criteria. If none were supplied, say so.
+### 5. Inconsistencies, gaps and concerns
+Conflicts among sources, unsupported claims, missing materials, and concerns raised anywhere in the record.
+### 6. Proposed framing
+The overall argument the memo will make, in three to five sentences.
+
+=== CLARIFICATION QUESTIONS ===
+A numbered list of concise questions for the dean, limited to missing facts or unresolved conflicts that would materially affect the recommendation or the accuracy of the memo. For each, add one short sentence on why it matters. If there are none, write "None."`;
+
+const TASK_DRAFT_AFTER_ANALYSIS = `TASK: DRAFT THE MEMO
+
+Using the case materials, your pre-draft analysis above, and the dean's answers, draft the memo now. Where a question remains unanswered, use careful, qualified wording and list the open item in the source check.
+
+${FORMAT_DELIVERABLES}`;
+
+const TASK_DRAFT_DIRECT = `TASK: ANALYZE THE RECORD AND DRAFT THE MEMO
+
+First carry out the pre-draft analysis described in your instructions, but do not include it in your reply. Do not stop to ask questions: if a missing fact or unresolved conflict would materially affect the recommendation, list it under **Questions for the dean** at the top of the source check and use careful, qualified wording in the memo.
+
+${FORMAT_DELIVERABLES}`;
+
+function taskRevise(memoMd, request) {
+  return `TASK: REVISE THE MEMO
+
+Below is the dean's current version of the memo, including any manual edits. Treat the dean's edits as intentional and keep them unless the request says otherwise.
+
+<current_memo>
+${memoMd}
+</current_memo>
+
+The dean's revision request:
+<revision_request>
+${request}
+</revision_request>
+
+Apply the same source and accuracy rules. Return the complete revised memo, not a list of changes, with an updated source check and verification table that match the revised memo.
+
+${FORMAT_DELIVERABLES}`;
+}
+
+/* ------------------------------------------------------------------ small helpers */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+const fmt = (n) => Math.round(n || 0).toLocaleString('en-US');
+const estTokens = (s) => Math.ceil((s || '').length / 4);
+const wordCount = (s) => ((s || '').match(/\S+/g) || []).length;
+const sleep = (ms, signal) => new Promise((res, rej) => {
+  const t = setTimeout(res, ms);
+  signal?.addEventListener('abort', () => { clearTimeout(t); rej(new DOMException('Aborted', 'AbortError')); }, { once: true });
+});
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('ptmd.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('ptmd.' + k, JSON.stringify(v)); } catch { /* storage unavailable */ } },
+  del(k) { try { localStorage.removeItem('ptmd.' + k); } catch { /* ignore */ } },
+};
+function toast(msg, kind = 'info', ms = 4500) {
+  const t = document.createElement('div');
+  t.className = 'toast ' + kind; t.textContent = msg;
+  $('#toasts').appendChild(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, ms);
+}
+function todayISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function fmtDate(iso) {
+  if (!iso) return '';
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return iso;
+  return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+function fmtTime(ts) { return new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+function safeFileName(s) { return String(s || '').replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 80) || 'untitled'; }
+function downloadBlob(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch {
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch { /* ignore */ }
+    ta.remove(); return ok;
+  }
+}
+function bufToB64(buf) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(',')[1] || '');
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(new Blob([buf]));
+  });
+}
+
+/* ------------------------------------------------------------------ state */
+const S = {
+  step: 'setup',
+  provider: 'anthropic',
+  keys: { anthropic: '', gemini: '', openai: '' },
+  model: { anthropic: 'claude-opus-5-5', gemini: 'gemini-pro-latest', openai: 'gpt-5.6' },
+  modelLists: { anthropic: null, gemini: null, openai: null },
+  conn: { anthropic: '', gemini: '', openai: '' },
+  effort: 'high',
+  maxOut: '',
+  rememberKey: false,
+  prompt: null,                 // custom instructions, or null for the default
+  caseInfo: {},
+  docs: [],                     // {id, cat, name, type, label, text, pages, kind, size, pdfB64, sendPdf, lowText, warn, status, lib}
+  rememberLib: { template: false, criteria: false },
+  analysis: null,               // {raw, analysisMd, questions[], answers[], notes, turns[], materials, sig, ...}
+  convo: [], convoMaterials: null, convoSig: null,
+  drafts: [], cur: -1,
+  exportPrefs: { font: 'Times New Roman', size: 12, pageNumbers: true },
+  busy: false, dirty: false,
+  pendingManual: null,
+};
+const OFFICE_FIELDS = ['school', 'targetLength', 'author', 'recipient'];
+
+function markDirty() { S.dirty = true; }
+function currentModel() { return (S.model[S.provider] || '').trim(); }
+function saveSettings() {
+  store.set('settings', { provider: S.provider, model: S.model, effort: S.effort, maxOut: S.maxOut, rememberKey: S.rememberKey,
+    rememberLib: S.rememberLib, exportPrefs: S.exportPrefs });
+  if (S.rememberKey) store.set('keys', S.keys); else store.del('keys');
+}
+
+/* ------------------------------------------------------------------ navigation */
+const STEPS = ['setup', 'case', 'docs', 'analysis', 'draft'];
+function go(step) {
+  if (S.step === 'draft') saveEditorToVersion();
+  S.step = step;
+  for (const p of $$('.panel')) p.hidden = p.id !== 'panel-' + step;
+  for (const b of $$('#steps button')) b.setAttribute('aria-current', b.dataset.step === step ? 'step' : 'false');
+  if (step === 'analysis') renderAnalysis();
+  if (step === 'draft') renderDraft();
+  window.scrollTo({ top: 0 });
+}
+function updateSteps() {
+  const done = {
+    setup: S.provider === 'manual' || (!!S.keys[S.provider] && !!currentModel()),
+    case: !!(S.caseInfo.candidate || '').trim(),
+    docs: S.docs.some((d) => d.cat === 'input' && d.status === 'ok'),
+    analysis: !!S.analysis,
+    draft: S.drafts.length > 0,
+  };
+  for (const b of $$('#steps button')) b.classList.toggle('done', !!done[b.dataset.step]);
+  const pill = $('#statusPill');
+  if (S.provider === 'manual') { pill.classList.remove('ok'); $('.txt', pill).textContent = 'Copy & paste mode'; }
+  else if (S.keys[S.provider]) { pill.classList.add('ok'); $('.txt', pill).textContent = `${PROVIDERS[S.provider].name} · ${currentModel() || 'choose a model'}`; }
+  else { pill.classList.remove('ok'); $('.txt', pill).textContent = `${PROVIDERS[S.provider].name}: add API key`; }
+}
+
+/* ------------------------------------------------------------------ 1. setup panel */
+function renderSetup() {
+  const p = S.provider;
+  for (const r of $$('input[name=provider]')) r.checked = r.value === p;
+  const manual = p === 'manual';
+  $('#keyCard').hidden = manual;
+  $('#manualCard').hidden = !manual;
+  $('#privacyNote').innerHTML = `<b>Confidentiality.</b> ${PROVIDERS[p].privacy} ` +
+    (manual ? '' : 'Before uploading personnel files, confirm that your institution permits sending them to this provider (for example, under an enterprise or data-protection agreement).');
+  if (!manual) {
+    $('#keyLabel').textContent = PROVIDERS[p].keyLabel;
+    $('#apiKey').placeholder = PROVIDERS[p].placeholder;
+    $('#apiKey').value = S.keys[p] || '';
+    $('#keyHint').innerHTML = PROVIDERS[p].help;
+    renderModelSelect();
+    $('#connectResult').innerHTML = S.conn[p] || (S.modelLists[p] ? '' : 'Tip: choose “Test key &amp; load models” to list the models your key can use.');
+  }
+  $('#rememberKey').checked = S.rememberKey;
+  $('#effort').value = S.effort;
+  $('#maxOut').value = S.maxOut;
+  $('#promptStatus').textContent = S.prompt ? 'Using your customized instructions.' : 'Using the default instructions.';
+  updateSteps();
+}
+function renderModelSelect() {
+  const p = S.provider;
+  if (p === 'manual') return;
+  const list = S.modelLists[p] || MODEL_PRESETS[p];
+  const cur = S.model[p];
+  let html = '';
+  if (cur && !list.some((m) => m.id === cur)) html += `<option value="${esc(cur)}">${esc(cur)} (custom)</option>`;
+  html += list.map((m) => `<option value="${esc(m.id)}">${esc(m.label)}</option>`).join('');
+  html += '<option value="__custom">Other model ID…</option>';
+  const sel = $('#modelSelect');
+  sel.innerHTML = html;
+  sel.value = cur || (list[0] && list[0].id) || '';
+  if (!cur && list[0]) S.model[p] = list[0].id;
+  $('#modelCustom').hidden = true;
+}
+
+function rankOpenAI(ids) {
+  const keep = ids.filter((id) => /^(gpt-|o\d|chatgpt)/i.test(id) &&
+    !/(audio|realtime|transcribe|tts|image|embed|search|moderation|whisper|dall|codex|instruct|davinci|babbage|computer|vision|0301|0613|0314|gpt-3|-16k|cyber|live)/i.test(id));
+  const score = (id) => {
+    let s = 0;
+    const g = id.match(/gpt-(\d+(?:\.\d+)?)/i);
+    const o = id.match(/^o(\d+)/i);
+    if (g) s = parseFloat(g[1]) * 100; else if (o) s = 400 + parseInt(o[1], 10) * 10;
+    if (/mini|nano|lite/i.test(id)) s -= 60;
+    if (/chat/i.test(id)) s -= 25;
+    if (/-pro\b/i.test(id)) s -= 15;
+    if (/\d{4}-\d{2}-\d{2}/.test(id)) s -= 5;
+    return s - id.length * 0.01;
+  };
+  return keep.sort((a, b) => score(b) - score(a));
+}
+function rankGemini(models) {
+  const score = (id) => {
+    const v = id.match(/gemini-(\d+(?:\.\d+)?)/);
+    let s = v ? parseFloat(v[1]) * 100 : (/latest/.test(id) ? 50 : 0);
+    if (/pro/.test(id)) s += 30; else if (/flash-lite|lite/.test(id)) s -= 20; else if (/flash/.test(id)) s += 10;
+    if (/preview|exp/.test(id)) s -= 3;
+    return s - id.length * 0.01;
+  };
+  return models.sort((a, b) => score(b.id) - score(a.id));
+}
+
+async function listModels(p, key) {
+  if (p === 'anthropic') {
+    const r = await safeFetch(p, 'https://api.anthropic.com/v1/models?limit=1000', { headers: anthropicHeaders(key) });
+    if (!r.ok) throw await apiError(r, p);
+    const j = await r.json();
+    return (j.data || []).map((m) => ({
+      id: m.id, label: (m.display_name ? `${m.display_name} (${m.id})` : m.id) + (m.id === 'claude-opus-5-5' ? '  · recommended' : ''),
+      maxOut: m.max_tokens, ctx: m.max_input_tokens,
+    }));
+  }
+  if (p === 'openai') {
+    const r = await safeFetch(p, 'https://api.openai.com/v1/models', { headers: { Authorization: 'Bearer ' + key } });
+    if (!r.ok) throw await apiError(r, p);
+    const j = await r.json();
+    return rankOpenAI((j.data || []).map((m) => m.id)).map((id) => ({ id, label: id }));
+  }
+  if (p === 'gemini') {
+    const r = await safeFetch(p, 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000', { headers: { 'x-goog-api-key': key } });
+    if (!r.ok) throw await apiError(r, p);
+    const j = await r.json();
+    const models = (j.models || [])
+      .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map((m) => ({ id: String(m.name || '').replace(/^models\//, ''), label: '', ctx: m.inputTokenLimit, maxOut: m.outputTokenLimit, dn: m.displayName }))
+      .filter((m) => /gemini/i.test(m.id) && !/(embed|aqa|imagen|image|tts|audio|live|robotics|computer-use|learnlm|gemma|veo|lyria|banana)/i.test(m.id));
+    models.forEach((m) => { m.label = m.dn ? `${m.dn} (${m.id})` : m.id; });
+    return rankGemini(models);
+  }
+  return [];
+}
+function pickDefaultModel(p, list) {
+  const cur = S.model[p];
+  if (cur && list.some((m) => m.id === cur)) return cur;
+  if (p === 'anthropic') return (list.find((m) => m.id === 'claude-opus-5-5') || list.find((m) => /opus/.test(m.id)) || list[0])?.id;
+  return list[0]?.id;
+}
+async function testConnection() {
+  const p = S.provider; const key = S.keys[p];
+  if (!key) { $('#connectResult').innerHTML = '<span style="color:var(--err)">Enter an API key first.</span>'; return; }
+  const btn = $('#btnConnect'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Checking…';
+  try {
+    const list = await listModels(p, key);
+    if (!list.length) throw new Error('The key works, but no suitable text models were listed for it.');
+    S.modelLists[p] = list;
+    S.model[p] = pickDefaultModel(p, list);
+    S.conn[p] = `<span style="color:var(--ok)">✓ Connected. ${list.length} model${list.length === 1 ? '' : 's'} available.</span>`;
+    saveSettings(); renderSetup();
+    toast(`Connected to ${PROVIDERS[p].name}.`, 'ok');
+  } catch (e) {
+    S.conn[p] = `<span style="color:var(--err)">${esc(e.message)}</span>`;
+    $('#connectResult').innerHTML = S.conn[p];
+  } finally {
+    btn.disabled = false; btn.textContent = 'Test key & load models';
+    updateSteps();
+  }
+}
+
+/* ------------------------------------------------------------------ 2. case panel */
+function renderCase() {
+  const sel = $('#c_action');
+  if (!sel.options.length) sel.innerHTML = ACTIONS.map((a) => `<option value="${esc(a.value)}">${esc(a.label)}</option>`).join('');
+  for (const el of $$('[data-case]')) {
+    const k = el.dataset.case;
+    if (k === 'preferredExample') continue;
+    el.value = S.caseInfo[k] ?? '';
+  }
+  $('#c_actionOther').hidden = S.caseInfo.action !== 'other';
+  renderPreferredExample();
+}
+function renderPreferredExample() {
+  const sel = $('#c_preferredExample');
+  const ids = docIds();
+  const temps = S.docs.filter((d) => d.cat === 'template' && d.status === 'ok');
+  sel.innerHTML = '<option value="">Let the AI select the closest match</option>' +
+    temps.map((d) => `<option value="${esc(d.id)}">${esc(ids[d.id])} · ${esc(d.name)}${d.label ? ' (' + esc(d.label) + ')' : ''}</option>`).join('');
+  sel.value = temps.some((d) => d.id === S.caseInfo.preferredExample) ? S.caseInfo.preferredExample : '';
+}
+function actionPhrase() {
+  const a = S.caseInfo.action || ACTIONS[0].value;
+  if (a === 'other') return (S.caseInfo.actionOther || '').trim() || 'the proposed personnel action';
+  return a;
+}
+function caseParamsBlock() {
+  const c = S.caseInfo; const ids = docIds();
+  const pref = c.preferredExample && S.docs.find((d) => d.id === c.preferredExample && d.status === 'ok');
+  const hasCriteria = S.docs.some((d) => d.cat === 'criteria' && d.status === 'ok');
+  const rows = [
+    ['Candidate', c.candidate], ['Current title', c.currentTitle], ['Department/program', c.department], ['School/college', c.school],
+    ['Proposed action', actionPhrase()], ['Memo author/title (FROM)', c.author], ['Recipient (TO)', c.recipient],
+    ['Memo date', fmtDate(c.memoDate)], ['Effective date, if applicable', fmtDate(c.effectiveDate)], ['Target length', c.targetLength],
+    ['Required institutional criteria or terminology', c.criteriaTerms || (hasCriteria ? 'See the attached criteria documents (C-series).' : '')],
+    ['Preferred example memo', pref ? `${ids[pref.id]} (${pref.name})` : 'Select the closest match'],
+    ["Vote totals supplied by the dean's office", c.votes],
+    ['Other instructions', c.otherInstructions],
+  ];
+  return '<case_parameters>\n' +
+    rows.map(([k, v]) => `- ${k}: ${(v && String(v).trim()) || '[not provided]'}`).join('\n') +
+    '\n</case_parameters>\nWhere a parameter is marked [not provided], take it from the materials if the record establishes it; otherwise use a bracketed placeholder in the memo (for example, [RECIPIENT NAME AND TITLE]) and note it in the source check.';
+}
+
+/* ------------------------------------------------------------------ 3. documents: extraction */
+function guessInputType(name) {
+  const n = name.toLowerCase().replace(/[_\-.]+/g, ' ');
+  if (/\b(cv|vita|vitae|resume|curriculum)\b/.test(n)) return 'Curriculum vitae';
+  if (/extern|referee|outside (review|letter)|arm.?s length|\bext\b/.test(n)) return 'External review letter';
+  if (/chair/.test(n)) return 'Department chair letter';
+  if (/committee|\bfrc\b|\bptc\b|p ?& ?t|faculty review|school review|campus review|advisory/.test(n)) return 'Faculty review committee letter';
+  if (/\bvotes?\b|ballot|tally/.test(n)) return 'Vote totals / review record';
+  if (/((teaching|course|student|instructor).*(eval|rating|survey))|\bsets\b|\bces\b|\bsei\b|\bsrt\b|evaluations? of teaching/.test(n)) return 'Teaching evaluations';
+  if (/peer (obs|review|teaching)|observation/.test(n)) return 'Peer teaching observation';
+  if (/third year|3rd year|mid ?(tenure|probation)|pre ?tenure/.test(n)) return 'Prior review (e.g., third-year review)';
+  if (/\bdept\b|department/.test(n)) return 'Department evaluation / recommendation';
+  if (/research|scholar/.test(n)) return 'Research statement';
+  if (/teach/.test(n)) return 'Teaching statement';
+  if (/service/.test(n)) return 'Service statement';
+  if (/statement|narrative|self ?(assess|eval)/.test(n)) return 'Personal statement (combined)';
+  return 'Other supporting material';
+}
+function guessCriteriaType(name) {
+  const n = name.toLowerCase();
+  if (/dept|department/.test(n)) return 'Department criteria';
+  if (/school|college|business/.test(n)) return 'School / college criteria';
+  if (/universit|campus|handbook|academic polic|provost|vpfaa/.test(n)) return 'University criteria';
+  return 'School / college criteria';
+}
+
+async function extractFile(file) {
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  if (ext === 'pdf' || file.type === 'application/pdf') return extractPdf(file);
+  if (ext === 'docx') return extractDocx(file);
+  if (ext === 'xlsx') return extractXlsx(file);
+  if (['txt', 'md', 'markdown', 'csv', 'tsv', 'text', 'json'].includes(ext)) return { kind: 'text', text: await file.text() };
+  if (['html', 'htm'].includes(ext)) return { kind: 'text', text: htmlToMarkdown(await file.text()) };
+  if (ext === 'doc') throw new Error('Older .doc files can’t be read in the browser. In Word, choose File › Save As › Word Document (.docx) or PDF, then add it again.');
+  if (ext === 'xls') throw new Error('Older .xls files can’t be read. Save the workbook as .xlsx or .csv, then add it again.');
+  if (['pages', 'rtf', 'odt', 'ppt', 'pptx', 'key'].includes(ext)) throw new Error('This file format isn’t supported. Save it as PDF or .docx, then add it again.');
+  if ((file.type || '').startsWith('text/')) return { kind: 'text', text: await file.text() };
+  throw new Error('Unsupported file type. Use PDF, Word (.docx), Excel (.xlsx), CSV or text files.');
+}
+async function extractPdf(file) {
+  const pdfjs = await loadLib('pdfjs');
+  pdfjs.GlobalWorkerOptions.workerSrc = LIBS.pdfjs.worker;
+  const buf = await file.arrayBuffer();
+  const pdfB64 = await bufToB64(buf);
+  let pdf;
+  try {
+    // isEvalSupported:false closes the font-eval code path (CVE-2024-4367) in this pdf.js version.
+    pdf = await pdfjs.getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise;
+  } catch (e) {
+    if (e && e.name === 'PasswordException') throw new Error('This PDF is password-protected. Save an unprotected copy and add it again.');
+    throw new Error('Could not read this PDF (' + (e && e.message || e) + ').');
+  }
+  const pages = []; let chars = 0;
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const tc = await page.getTextContent();
+    let s = '';
+    for (const it of tc.items) { if ('str' in it) { s += it.str; if (it.hasEOL) s += '\n'; } }
+    s = s.replace(/[ \t]+\n/g, '\n').replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+    chars += s.length;
+    pages.push(`[Page ${i}]\n${s}`);
+    page.cleanup();
+  }
+  const n = pdf.numPages;
+  await pdf.destroy();
+  return { kind: 'pdf', text: pages.join('\n\n'), pages: n, pdfB64, lowText: chars / Math.max(1, n) < 80 };
+}
+async function extractDocx(file) {
+  const mammoth = await loadLib('mammoth');
+  const buf = await file.arrayBuffer();
+  const r = await mammoth.convertToHtml({ arrayBuffer: buf }, { convertImage: mammoth.images.imgElement(() => Promise.resolve({ src: '' })) });
+  const text = htmlToMarkdown(r.value);
+  return { kind: 'docx', text, lowText: text.trim().length < 50 };
+}
+
+// Minimal .xlsx reader: unzip with the browser's DecompressionStream, read shared strings and sheets.
+async function unzip(buffer) {
+  const u8 = new Uint8Array(buffer); const dv = new DataView(buffer);
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error('This file is not a valid .xlsx workbook.');
+  const count = dv.getUint16(eocd + 10, true); let p = dv.getUint32(eocd + 16, true);
+  const entries = {};
+  for (let n = 0; n < count && dv.getUint32(p, true) === 0x02014b50; n++) {
+    const method = dv.getUint16(p + 10, true), size = dv.getUint32(p + 20, true);
+    const nameLen = dv.getUint16(p + 28, true), extraLen = dv.getUint16(p + 30, true), commentLen = dv.getUint16(p + 32, true);
+    const off = dv.getUint32(p + 42, true);
+    entries[new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nameLen))] = { method, size, off };
+    p += 46 + nameLen + extraLen + commentLen;
+  }
+  return {
+    has: (name) => !!entries[name],
+    async text(name) {
+      const e = entries[name]; if (!e) return null;
+      const start = e.off + 30 + dv.getUint16(e.off + 26, true) + dv.getUint16(e.off + 28, true);
+      const data = u8.subarray(start, start + e.size);
+      if (e.method === 0) return new TextDecoder().decode(data);
+      if (e.method === 8) return await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+      throw new Error('Unsupported compression in workbook.');
+    },
+  };
+}
+async function extractXlsx(file) {
+  if (typeof DecompressionStream === 'undefined') throw new Error('This browser can’t read .xlsx files. Save the sheet as .csv and add it again.');
+  const zip = await unzip(await file.arrayBuffer());
+  const xml = (s) => new DOMParser().parseFromString(s, 'application/xml');
+  const shared = [];
+  const ssText = await zip.text('xl/sharedStrings.xml');
+  if (ssText) for (const si of xml(ssText).getElementsByTagName('si')) shared.push([...si.getElementsByTagName('t')].map((t) => t.textContent).join(''));
+  const wb = xml(await zip.text('xl/workbook.xml') || '<workbook/>');
+  const relsText = await zip.text('xl/_rels/workbook.xml.rels');
+  const rels = {};
+  if (relsText) for (const r of xml(relsText).getElementsByTagName('Relationship')) rels[r.getAttribute('Id')] = r.getAttribute('Target');
+  const colIndex = (ref) => { const m = /^([A-Z]+)/.exec(ref || ''); if (!m) return -1; let n = 0; for (const ch of m[1]) n = n * 26 + ch.charCodeAt(0) - 64; return n - 1; };
+  const out = [];
+  for (const sh of wb.getElementsByTagName('sheet')) {
+    const rid = sh.getAttribute('r:id') || sh.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+    let target = rels[rid] || ''; target = target.replace(/^\/?xl\//, '').replace(/^\//, '');
+    const sheetXml = await zip.text('xl/' + target);
+    if (!sheetXml) continue;
+    const rows = [];
+    for (const row of xml(sheetXml).getElementsByTagName('row')) {
+      const cells = [];
+      for (const c of row.getElementsByTagName('c')) {
+        const t = c.getAttribute('t'); const v = c.getElementsByTagName('v')[0]?.textContent ?? '';
+        let val = v;
+        if (t === 's') val = shared[+v] ?? '';
+        else if (t === 'inlineStr') val = [...c.getElementsByTagName('t')].map((x) => x.textContent).join('');
+        else if (t === 'b') val = v === '1' ? 'TRUE' : 'FALSE';
+        const idx = colIndex(c.getAttribute('r')); cells[idx >= 0 ? idx : cells.length] = String(val).replace(/\s+/g, ' ').trim();
+      }
+      if (cells.some((x) => x)) rows.push(Array.from(cells, (x) => x ?? '').join('\t'));
+    }
+    out.push(`[Sheet: ${sh.getAttribute('name')}]\n${rows.join('\n')}`);
+  }
+  if (!out.length) throw new Error('No worksheets with data were found in this workbook.');
+  return { kind: 'xlsx', text: out.join('\n\n') };
+}
+
+/* ------------------------------------------------------------------ HTML → Markdown (Word imports and memo edits) */
+const BLOCK_TAGS = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'TABLE', 'BLOCKQUOTE', 'PRE', 'HR', 'SECTION', 'ARTICLE', 'HEADER', 'FOOTER', 'FIGURE', 'DL', 'ADDRESS', 'MAIN', 'ASIDE', 'NAV']);
+function mdWrap(t, m) { if (!t.trim()) return t; const lead = t.match(/^\s*/)[0], trail = t.match(/\s*$/)[0]; return lead + m + t.trim() + m + trail; }
+function mdInline(node) {
+  let s = '';
+  for (const ch of node.childNodes) {
+    if (ch.nodeType === 3) { s += ch.nodeValue.replace(/\s+/g, ' '); continue; }
+    if (ch.nodeType !== 1) continue;
+    const tag = ch.tagName;
+    if (tag === 'BR') s += '\n';
+    else if (tag === 'STRONG' || tag === 'B') s += mdWrap(mdInline(ch), '**');
+    else if (tag === 'EM' || tag === 'I') s += mdWrap(mdInline(ch), '*');
+    else if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'IMG') continue;
+    else if (BLOCK_TAGS.has(tag)) s += ' ' + mdInline(ch) + ' ';
+    else s += mdInline(ch);
+  }
+  return s;
+}
+function mdList(list, indent) {
+  const ordered = list.tagName === 'OL'; let i = 1; const lines = [];
+  for (const li of list.children) {
+    if (li.tagName !== 'LI') continue;
+    const span = document.createElement('span'); const nested = [];
+    for (const c of li.childNodes) {
+      if (c.nodeType === 1 && (c.tagName === 'UL' || c.tagName === 'OL')) nested.push(c);
+      else { if (c.nodeType === 1 && c.tagName === 'P' && span.childNodes.length) span.appendChild(document.createTextNode(' ')); span.appendChild(c.cloneNode(true)); }
+    }
+    lines.push(`${indent}${ordered ? (i++) + '.' : '-'} ${mdInline(span).replace(/\s*\n\s*/g, ' ').trim()}`);
+    for (const n of nested) lines.push(mdList(n, indent + '   '));
+  }
+  return lines.join('\n');
+}
+function mdTable(table) {
+  const rows = [...table.querySelectorAll('tr')].filter((r) => r.closest('table') === table);
+  if (!rows.length) return '';
+  const cells = rows.map((r) => [...r.children].map((c) => mdInline(c).replace(/\s+/g, ' ').trim().replace(/\|/g, '\\|')));
+  const n = Math.max(...cells.map((r) => r.length));
+  const pad = (r) => { while (r.length < n) r.push(''); return r; };
+  const lines = ['| ' + pad(cells[0]).join(' | ') + ' |', '|' + ' --- |'.repeat(n)];
+  for (const r of cells.slice(1)) lines.push('| ' + pad(r).join(' | ') + ' |');
+  return lines.join('\n');
+}
+function mdBlocks(node, out) {
+  let buf = null;
+  const flush = () => { if (buf) { const t = mdInline(buf).replace(/[ \t]+\n/g, '\n').replace(/\n[ \t]+/g, '\n').trim(); if (t) out.push(t); buf = null; } };
+  for (const ch of node.childNodes) {
+    if (ch.nodeType === 1 && BLOCK_TAGS.has(ch.tagName)) {
+      flush();
+      const tag = ch.tagName;
+      if (/^H[1-6]$/.test(tag)) { const t = mdInline(ch).replace(/\s+/g, ' ').trim(); if (t) out.push('#'.repeat(+tag[1]) + ' ' + t); }
+      else if (tag === 'P') { const t = mdInline(ch).replace(/[ \t]+\n/g, '\n').replace(/\n[ \t]+/g, '\n').trim(); if (t) out.push(t); }
+      else if (tag === 'UL' || tag === 'OL') { const t = mdList(ch, ''); if (t.trim()) out.push(t); }
+      else if (tag === 'TABLE') { const t = mdTable(ch); if (t) out.push(t); }
+      else if (tag === 'HR') out.push('---');
+      else if (tag === 'PRE') out.push(ch.textContent);
+      else if (tag === 'BLOCKQUOTE') { const sub = []; mdBlocks(ch, sub); out.push(sub.map((b) => b.split('\n').map((l) => '> ' + l).join('\n')).join('\n>\n')); }
+      else mdBlocks(ch, out);
+    } else if (ch.nodeType === 1 || ch.nodeType === 3) {
+      if (ch.nodeType === 1 && (ch.tagName === 'SCRIPT' || ch.tagName === 'STYLE')) continue;
+      if (!buf) buf = document.createElement('span');
+      buf.appendChild(ch.cloneNode(true));
+    }
+  }
+  flush();
+}
+function htmlToMarkdown(input) {
+  let root = input;
+  if (typeof input === 'string') {
+    const doc = new DOMParser().parseFromString(input, 'text/html');
+    doc.querySelectorAll('script,style,noscript').forEach((n) => n.remove());
+    root = doc.body;
+  }
+  const out = []; mdBlocks(root, out);
+  return out.join('\n\n');
+}
+
+/* ------------------------------------------------------------------ markdown → HTML */
+function md(text) {
+  const src = String(text || '');
+  if (window.marked && window.DOMPurify) {
+    try { return DOMPurify.sanitize(marked.parse(src, { gfm: true, breaks: true })); } catch { /* fall through */ }
+  }
+  return '<p>' + esc(src).replace(/\n{2,}/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
+}
+
+/* ------------------------------------------------------------------ 3. documents: list management */
+function docIds() {
+  const ids = {}; const n = { input: 0, template: 0, criteria: 0 }; const pre = { input: 'D', template: 'T', criteria: 'C' };
+  for (const d of S.docs) if (d.status === 'ok') ids[d.id] = pre[d.cat] + (++n[d.cat]);
+  return ids;
+}
+function docTokens(d) {
+  if (d.status !== 'ok') return 0;
+  if (d.sendPdf && d.pdfB64) return (d.pages || 1) * 1600;
+  return estTokens(d.text);
+}
+async function addFiles(files, cat) {
+  const list = [...files];
+  if (!list.length) return;
+  for (const f of list) {
+    const doc = {
+      id: uid(), cat, name: f.name, size: f.size,
+      type: cat === 'input' ? guessInputType(f.name) : cat === 'criteria' ? guessCriteriaType(f.name) : TEMPLATE_TYPE,
+      label: '', text: '', pages: 0, kind: '', pdfB64: null, sendPdf: false, lowText: false, warn: '', status: 'loading', lib: false,
+    };
+    S.docs.push(doc);
+    renderDocs();
+    try {
+      Object.assign(doc, await extractFile(f), { status: 'ok' });
+      if (doc.lowText) {
+        if (doc.kind === 'pdf') {
+          doc.sendPdf = S.provider !== 'manual';
+          doc.warn = 'Little or no selectable text, possibly a scanned document. ' +
+            (doc.sendPdf ? 'The original PDF will be sent to the AI so it can read the page images.' : 'Attach the PDF in your AI chat, or turn on “Send PDF” after adding an API key.');
+        } else doc.warn = 'Very little text was found in this file.';
+      }
+    } catch (e) {
+      doc.status = 'error'; doc.warn = e.message || String(e);
+    }
+    renderDocs();
+  }
+  markDirty();
+  if (cat !== 'input') syncLibrary(cat);
+}
+function removeDoc(id) {
+  const d = S.docs.find((x) => x.id === id); if (!d) return;
+  S.docs = S.docs.filter((x) => x.id !== id);
+  if (S.caseInfo.preferredExample === id) S.caseInfo.preferredExample = '';
+  renderDocs(); markDirty();
+  if (d.cat !== 'input') syncLibrary(d.cat);
+}
+const FILE_ICONS = { pdf: 'PDF', docx: 'DOCX', xlsx: 'XLSX', text: 'TXT', paste: 'TEXT' };
+function docRow(d, ids) {
+  const icon = d.status === 'loading' ? '<span class="spinner"></span>' : esc(FILE_ICONS[d.kind] || (d.name.split('.').pop() || 'FILE').toUpperCase().slice(0, 4));
+  const meta = d.status === 'loading' ? 'Reading…'
+    : d.status === 'error' ? 'Could not be read'
+    : [ids[d.id], d.pages ? `${d.pages} page${d.pages === 1 ? '' : 's'}` : '', `${fmt(wordCount(d.text))} words`, `~${fmt(docTokens(d))} tokens`, d.lib ? 'saved in library' : '', d.edited ? 'text edited' : '']
+      .filter(Boolean).join(' · ');
+  let control = '';
+  if (d.status === 'ok') {
+    if (d.cat === 'input') control = `<select data-act="type" data-id="${d.id}" aria-label="Document type">${INPUT_TYPES.map((t) => `<option${t === d.type ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
+    else if (d.cat === 'criteria') control = `<select data-act="type" data-id="${d.id}" aria-label="Criteria type">${CRITERIA_TYPES.map((t) => `<option${t === d.type ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
+    else control = `<input type="text" class="flabel" data-act="label" data-id="${d.id}" value="${esc(d.label)}" placeholder="Note: discipline, rank, year" aria-label="Note about this example">`;
+    if (d.kind === 'pdf') {
+      control += `<label class="minitoggle" title="${d.pdfB64 ? 'Send the original PDF so the AI can see page images (for scans, tables and charts). Uses more tokens.' : 'Re-add the file to enable this option.'}"><input type="checkbox" data-act="sendpdf" data-id="${d.id}"${d.sendPdf ? ' checked' : ''}${d.pdfB64 ? '' : ' disabled'}> Send PDF</label>`;
+    }
+    control += `<button class="iconbtn" type="button" data-act="view" data-id="${d.id}" title="View or edit the extracted text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>`;
+  }
+  control += `<button class="iconbtn" type="button" data-act="remove" data-id="${d.id}" title="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>`;
+  return `<div class="file-row${d.status === 'error' ? ' error' : ''}">
+    <div class="ficon ${esc(d.kind)}">${icon}</div>
+    <div style="min-width:0"><div class="fname" title="${esc(d.name)}">${esc(d.name)}</div><div class="fmeta">${esc(meta)}</div>${d.warn ? `<div class="fwarn">${esc(d.warn)}</div>` : ''}</div>
+    <div class="fcontrols">${control}</div></div>`;
+}
+function renderDocs() {
+  const ids = docIds();
+  for (const cat of ['input', 'template', 'criteria']) {
+    $('#list-' + cat).innerHTML = S.docs.filter((d) => d.cat === cat).map((d) => docRow(d, ids)).join('');
+  }
+  const okInputs = S.docs.filter((d) => d.cat === 'input' && d.status === 'ok');
+  $('#inputChecklist').innerHTML = CHECKLIST.map((c) => {
+    const have = okInputs.some((d) => d.type === c.type || (c.alt && d.type === c.alt));
+    return `<span class="chip${have ? ' have' : ''}${c.optional ? ' opt' : ''}" title="${c.optional ? 'Optional' : 'Expected'}">${have ? '✓' : '○'} ${esc(c.label)}${c.optional && !have ? ' (optional)' : ''}</span>`;
+  }).join('');
+  const ok = S.docs.filter((d) => d.status === 'ok');
+  const tok = (cat) => ok.filter((d) => d.cat === cat).reduce((a, d) => a + docTokens(d), 0);
+  const total = tok('input') + tok('template') + tok('criteria');
+  const counts = (cat) => ok.filter((d) => d.cat === cat).length;
+  $('#docSummary').innerHTML = `<span><b>${ok.length}</b> document${ok.length === 1 ? '' : 's'} ready</span>
+    <span>Inputs: <b>${counts('input')}</b></span><span>Example memos: <b>${counts('template')}</b></span><span>Criteria: <b>${counts('criteria')}</b></span>
+    <span>Estimated size: <b>~${fmt(total)}</b> tokens</span>`;
+  const warns = [];
+  const ctx = modelContext();
+  if (ctx && total > ctx * 0.85) warns.push(`<div class="callout err">The documents (~${fmt(total)} tokens) may exceed the selected model's context window (${fmt(ctx)} tokens). Remove or shorten documents, turn off “Send PDF” where text extraction worked, or choose a model with a larger context window.</div>`);
+  else if (total > 180000) warns.push(`<div class="callout warn">This is a large file set (~${fmt(total)} tokens). Current Claude and Gemini models accept about a million tokens. Some OpenAI models accept less. Large requests also take longer and cost more.</div>`);
+  if (!counts('template') && ok.length) warns.push('<div class="callout info">No example memos yet. The AI drafts in a standard memo format, but matching your office\'s conventions works best with two or three prior memos.</div>');
+  const scanned = ok.filter((d) => d.lowText && d.kind === 'pdf' && !d.sendPdf);
+  if (scanned.length) warns.push(`<div class="callout warn">${scanned.length} PDF${scanned.length === 1 ? '' : 's'} with little readable text will not reach the AI unless “Send PDF” is on: ${scanned.map((d) => esc(d.name)).join(', ')}.</div>`);
+  $('#docWarnings').innerHTML = warns.join('');
+  renderPreferredExample();
+  updateSteps();
+}
+function modelContext() {
+  if (S.provider === 'manual') return 0;
+  const m = (S.modelLists[S.provider] || []).find((x) => x.id === currentModel());
+  return m && m.ctx ? m.ctx : 0;
+}
+
+/* ------------------------------------------------------------------ library (templates & criteria kept in this browser) */
+const idb = {
+  _db: null,
+  open() {
+    if (this._db) return Promise.resolve(this._db);
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('ptmd-library', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('docs', { keyPath: 'id' });
+      r.onsuccess = () => { this._db = r.result; res(r.result); };
+      r.onerror = () => rej(r.error);
+    });
+  },
+  async tx(mode, fn) {
+    const db = await this.open();
+    return new Promise((res, rej) => {
+      const t = db.transaction('docs', mode); const st = t.objectStore('docs');
+      const out = fn(st);
+      t.oncomplete = () => res(out && 'result' in out ? out.result : undefined);
+      t.onerror = () => rej(t.error);
+    });
+  },
+  all() { return this.tx('readonly', (st) => st.getAll()); },
+  put(doc) { return this.tx('readwrite', (st) => st.put(doc)); },
+  del(id) { return this.tx('readwrite', (st) => st.delete(id)); },
+};
+function serializeDoc(d, includeAllPdfs = false) {
+  const o = { id: d.id, cat: d.cat, name: d.name, size: d.size, type: d.type, label: d.label, text: d.text, pages: d.pages, kind: d.kind,
+    sendPdf: d.sendPdf, lowText: d.lowText, warn: d.warn, edited: !!d.edited };
+  o.pdfB64 = (d.pdfB64 && (d.sendPdf || includeAllPdfs)) ? d.pdfB64 : null;
+  return o;
+}
+async function syncLibrary(cat) {
+  try {
+    const existing = (await idb.all()) || [];
+    const inState = S.docs.filter((d) => d.cat === cat && d.status === 'ok');
+    if (S.rememberLib[cat]) {
+      for (const d of inState) { await idb.put(serializeDoc(d, true)); d.lib = true; }
+      for (const e of existing) if (e.cat === cat && !inState.some((d) => d.id === e.id)) await idb.del(e.id);
+    } else {
+      for (const e of existing) if (e.cat === cat) await idb.del(e.id);
+      for (const d of inState) d.lib = false;
+    }
+  } catch (e) {
+    toast('This browser could not save the library: ' + (e.message || e), 'warn');
+  }
+  renderDocs();
+}
+async function loadLibrary() {
+  try {
+    const all = (await idb.all()) || [];
+    let n = 0;
+    for (const e of all) {
+      if (!S.rememberLib[e.cat]) continue;
+      if (S.docs.some((d) => d.id === e.id)) continue;
+      S.docs.push({ ...e, status: 'ok', lib: true }); n++;
+    }
+    if (n) { renderDocs(); toast(`Loaded ${n} saved example memo${n === 1 ? '' : 's'} / criteria document${n === 1 ? '' : 's'} from this computer.`, 'ok'); }
+  } catch { /* IndexedDB unavailable (e.g., private window) */ }
+}
+
+/* ------------------------------------------------------------------ text dialog (view/edit/paste) */
+let textDlgDoc = null; let textDlgNewCat = null;
+function openTextDialog(doc, newCat) {
+  textDlgDoc = doc; textDlgNewCat = newCat || null;
+  const isNew = !doc;
+  $('#dlgTextTitle').textContent = isNew ? 'Paste text as a document' : doc.name;
+  $('#dlgTextNewFields').hidden = !isNew;
+  const types = newCat === 'input' ? INPUT_TYPES : newCat === 'criteria' ? CRITERIA_TYPES : [TEMPLATE_TYPE];
+  $('#dlgTextType').innerHTML = types.map((t) => `<option>${esc(t)}</option>`).join('');
+  $('#dlgTextTypeWrap').hidden = newCat === 'template';
+  $('#dlgTextName').value = '';
+  $('#dlgTextMeta').textContent = isNew ? 'Paste an email, a letter or any text that isn’t in a file.' :
+    `${doc.type} · ${fmt(wordCount(doc.text))} words${doc.sendPdf ? ' · Note: the original PDF is sent instead of this text while “Send PDF” is on.' : ''}`;
+  $('#dlgTextArea').value = isNew ? '' : doc.text;
+  $('#dlgText').returnValue = '';
+  $('#dlgText').showModal();
+}
+$('#dlgText').addEventListener('close', () => {
+  if ($('#dlgText').returnValue !== 'save') return;
+  const text = $('#dlgTextArea').value;
+  if (textDlgDoc) {
+    if (text !== textDlgDoc.text) { textDlgDoc.text = text; textDlgDoc.edited = true; markDirty(); }
+    renderDocs();
+    if (textDlgDoc.cat !== 'input') syncLibrary(textDlgDoc.cat);
+  } else if (text.trim()) {
+    const cat = textDlgNewCat;
+    const name = $('#dlgTextName').value.trim() || 'Pasted text';
+    const type = cat === 'template' ? TEMPLATE_TYPE : $('#dlgTextType').value;
+    S.docs.push({ id: uid(), cat, name, size: text.length, type, label: '', text, pages: 0, kind: 'paste', pdfB64: null, sendPdf: false, lowText: false, warn: '', status: 'ok', lib: false });
+    renderDocs(); markDirty();
+    if (cat !== 'input') syncLibrary(cat);
+  }
+});
+
+/* ------------------------------------------------------------------ building the request */
+function docsSig() {
+  const s = S.docs.filter((d) => d.status === 'ok').map((d) => [d.id, d.cat, d.type, d.label, d.sendPdf ? 1 : 0, d.text.length, d.text].join('|')).join('§');
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36) + ':' + s.length;
+}
+function buildMaterials() {
+  const ids = docIds(); const attachments = [];
+  const escAttr = (s) => String(s || '').replace(/"/g, "'").replace(/[<>]/g, '');
+  const groups = [
+    ['input', 'candidate_materials', "The candidate's dossier and the evaluative letters: the factual record for this case."],
+    ['template', 'example_memos', "Memos the dean wrote for previous successful cases: models for structure, tone, level of detail and terminology only. They are never a source of facts about this candidate."],
+    ['criteria', 'promotion_criteria', 'The promotion and tenure criteria that apply to this case.'],
+  ];
+  let out = 'CASE FILE\n\n';
+  for (const [cat, tag, desc] of groups) {
+    const docs = S.docs.filter((d) => d.cat === cat && d.status === 'ok');
+    out += `<${tag}>\n<!-- ${desc} -->\n`;
+    if (!docs.length) out += '(None provided.)\n';
+    for (const d of docs) {
+      const attrs = `id="${ids[d.id]}" type="${escAttr(d.type)}" file="${escAttr(d.name)}"` + (d.label ? ` note="${escAttr(d.label)}"` : '');
+      if (d.sendPdf && d.pdfB64) {
+        attachments.push({ id: ids[d.id], name: d.name, type: d.type, mime: 'application/pdf', b64: d.pdfB64, pages: d.pages });
+        out += `<document ${attrs} format="attached PDF">\n[The original PDF of ${ids[d.id]} is attached to this message.]\n</document>\n`;
+      } else {
+        out += `<document ${attrs}>\n${d.text.trim()}\n</document>\n`;
+      }
+    }
+    out += `</${tag}>\n\n`;
+  }
+  return { text: out.trim(), attachments };
+}
+function buildSystem() {
+  return (S.prompt || DEFAULT_PROMPT).split('{{ACTION}}').join(actionPhrase()) + '\n\n' + APP_PROTOCOL;
+}
+function answersBlock() {
+  const a = S.analysis; if (!a) return '';
+  const lines = [];
+  a.questions.forEach((q, i) => {
+    const ans = (a.answers[i] || '').trim();
+    lines.push(`Q${i + 1}: ${q}\nA${i + 1}: ${ans || 'No answer provided. Handle this with qualified wording and list it in the source check.'}`);
+  });
+  if ((a.notes || '').trim()) lines.push(`Additional guidance from the dean: ${a.notes.trim()}`);
+  if (!lines.length) return '';
+  return `<dean_answers>\n${lines.join('\n\n')}\n</dean_answers>`;
+}
+// Returns the conversation to send: {turns, materials, sig, fresh}
+function prepareTurns(stage, extra = {}) {
+  const sig = docsSig();
+  const params = caseParamsBlock();
+  if (stage === 'analysis') {
+    return { fresh: true, sig, materials: buildMaterials(), turns: [{ role: 'user', text: params + '\n\n' + TASK_ANALYSIS }] };
+  }
+  if (stage === 'draft') {
+    const a = S.analysis;
+    if (a && a.turns && a.sig === sig) {
+      const ans = answersBlock();
+      return { fresh: false, sig, materials: a.materials, afterAnalysis: true,
+        turns: [...a.turns, { role: 'user', text: (ans ? ans + '\n\n' : '') + params + '\n\n' + TASK_DRAFT_AFTER_ANALYSIS }] };
+    }
+    const ans = a ? answersBlock() : '';
+    return { fresh: true, sig, materials: buildMaterials(), turns: [{ role: 'user', text: params + '\n\n' + (ans ? ans + '\n\n' : '') + TASK_DRAFT_DIRECT }] };
+  }
+  if (stage === 'revise') {
+    const task = taskRevise(extra.memoMd, extra.request);
+    if (S.convo.length && S.convoSig === sig && S.convoMaterials && S.convo[S.convo.length - 1].role === 'assistant') {
+      return { fresh: false, sig, materials: S.convoMaterials, turns: [...S.convo, { role: 'user', text: task }] };
+    }
+    return { fresh: true, sig, materials: buildMaterials(), turns: [{ role: 'user', text: params + '\n\n' + task }] };
+  }
+  throw new Error('Unknown stage ' + stage);
+}
+function estimateRequestTokens(prep) {
+  let t = estTokens(buildSystem()) + estTokens(prep.materials.text);
+  for (const a of prep.materials.attachments) t += (a.pages || 1) * 1600;
+  for (const turn of prep.turns) t += estTokens(turn.text);
+  return t;
+}
+
+/* ------------------------------------------------------------------ provider calls */
+function anthropicHeaders(key) {
+  return { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' };
+}
+// Capabilities by Claude model family/version, so each request uses only parameters that model accepts.
+function claudeCaps(id) {
+  const m = /claude-(opus|sonnet|haiku|fable|mythos)-(\d+)(?:-(\d{1,2})(?!\d))?/.exec(id);
+  const fam = m ? m[1] : null; const v = m ? +m[2] + (m[3] ? +m[3] / 10 : 0) : 0;
+  const modern = !!m && (fam === 'fable' || fam === 'mythos' || ((fam === 'opus' || fam === 'sonnet') && v >= 4.6) || (fam === 'haiku' && v >= 5));
+  const effort = modern || (fam === 'opus' && v >= 4.5);
+  const listed = (S.modelLists.anthropic || []).find((x) => x.id === id);
+  let maxTokens = modern ? 64000 : (fam === 'opus' && v < 4.5 ? 32000 : (m ? 64000 : 8192));
+  if (listed && listed.maxOut) maxTokens = Math.min(listed.maxOut, 64000);
+  return {
+    adaptive: modern, effort, maxTokens,
+    effortMax: fam === 'opus' && v < 4.6 ? 'high' : 'max',
+    fallbacks: /^claude-(opus-5-5|opus-5|fable-5-1|sonnet-5-5)$/.test(id),
+  };
+}
+function isOpenAIReasoning(id) { return /^(o\d|gpt-5|gpt-[6-9])/i.test(id) && !/chat/i.test(id); }
+
+async function safeFetch(p, url, init) {
+  try { return await fetch(url, init); }
+  catch (e) {
+    if (e && e.name === 'AbortError') throw e;
+    throw Object.assign(new Error(`Could not reach ${PROVIDERS[p].name}. Check your internet connection. Some institutional networks, VPNs or browser extensions block AI services. (${e && e.message || e})`), { network: true });
+  }
+}
+async function apiError(res, p) {
+  let detail = '';
+  try { const j = await res.clone().json(); detail = (j && j.error && (j.error.message || j.error.status)) || j.message || JSON.stringify(j); }
+  catch { try { detail = await res.text(); } catch { /* ignore */ } }
+  const name = PROVIDERS[p].name; let msg;
+  if (res.status === 401 || (res.status === 403 && /key|auth|permission|credential/i.test(detail)) || /api key not valid|invalid.*api.?key|incorrect api key/i.test(detail)) msg = `${name} rejected the API key. Check that it is correct and active.`;
+  else if (res.status === 404) msg = `The model “${currentModel()}” was not found or isn't available to this key. Choose another model in AI setup.`;
+  else if (res.status === 429) msg = /quota|billing|credit|insufficient/i.test(detail) ? `${name} reports that the account's quota or credit is exhausted.` : `${name} rate limit reached. Wait a minute and try again.`;
+  else if (res.status === 413) msg = 'The request is too large for this provider. Remove documents or turn off “Send PDF” on large files.';
+  else if (res.status === 529 || res.status === 503) msg = `${name} is temporarily overloaded. Try again shortly.`;
+  else msg = `${name} returned an error (HTTP ${res.status}).`;
+  const err = new Error(msg + (detail ? ` Details: ${String(detail).slice(0, 500)}` : ''));
+  err.status = res.status; err.detail = detail;
+  err.retryAfter = parseFloat(res.headers.get('retry-after')) || 0;
+  return err;
+}
+async function* sseEvents(res) {
+  const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = '';
+  const parse = (chunk) => {
+    let event = 'message'; const data = [];
+    for (const line of chunk.split(/\r?\n/)) {
+      if (line.startsWith('event:')) event = line.slice(6).trim();
+      else if (line.startsWith('data:')) data.push(line.slice(5).replace(/^ /, ''));
+    }
+    return data.length ? { event, data: data.join('\n') } : null;
+  };
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let m;
+    while ((m = /\r?\n\r?\n/.exec(buf))) {
+      const ev = parse(buf.slice(0, m.index)); buf = buf.slice(m.index + m[0].length);
+      if (ev) yield ev;
+    }
+  }
+  buf += dec.decode();
+  if (buf.trim()) { const ev = parse(buf); if (ev) yield ev; }
+}
+function streamErr(message) { const e = new Error(message); e.midStream = true; return e; }
+
+async function callAnthropic({ key, model, system, turns, materials, onEvent, signal, minimal, noBeta, maxOverride }) {
+  const caps = claudeCaps(model);
+  const messages = turns.map((t, i) => {
+    if (i === 0 && t.role === 'user' && materials) {
+      const content = [];
+      for (const a of materials.attachments) {
+        content.push({ type: 'text', text: `Attachment for ${a.id} (${a.type}; file "${a.name}"):` });
+        content.push({ type: 'document', source: { type: 'base64', media_type: a.mime, data: a.b64 }, title: `${a.id} · ${a.name}` });
+      }
+      content.push({ type: 'text', text: materials.text, cache_control: { type: 'ephemeral' } }); // reused across analysis → draft → revisions
+      content.push({ type: 'text', text: t.text });
+      return { role: 'user', content };
+    }
+    return { role: t.role, content: t.text };
+  });
+  const body = { model, max_tokens: maxOverride || (S.maxOut ? +S.maxOut : caps.maxTokens), system, messages, stream: true };
+  const headers = { 'content-type': 'application/json', ...anthropicHeaders(key) };
+  if (!minimal) {
+    if (caps.adaptive) body.thinking = { type: 'adaptive' };
+    if (caps.effort) body.output_config = { effort: S.effort === 'max' ? caps.effortMax : S.effort };
+    // Server-side refusal fallback: if this model declines, the API re-runs the request on Anthropic's recommended fallback model.
+    if (caps.fallbacks && !noBeta) { body.fallbacks = 'default'; headers['anthropic-beta'] = 'server-side-fallback-2026-07-01'; }
+  }
+  const res = await safeFetch('anthropic', 'https://api.anthropic.com/v1/messages', { method: 'POST', headers, body: JSON.stringify(body), signal });
+  if (!res.ok) throw await apiError(res, 'anthropic');
+  onEvent({ phase: 'connected' });
+  let text = ''; let stop = null; const usage = {}; let modelUsed = model; let fellBack = false;
+  for await (const ev of sseEvents(res)) {
+    let d; try { d = JSON.parse(ev.data); } catch { continue; }
+    if (d.type === 'message_start') {
+      const u = d.message && d.message.usage || {};
+      usage.input = (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0);
+      usage.cached = u.cache_read_input_tokens || 0;
+      modelUsed = d.message && d.message.model || model;
+    } else if (d.type === 'content_block_start') {
+      const t = d.content_block && d.content_block.type;
+      if (t === 'thinking' || t === 'redacted_thinking') onEvent({ phase: 'thinking' });
+      else if (t === 'fallback') { fellBack = true; onEvent({ phase: 'fallback' }); }
+    } else if (d.type === 'content_block_delta') {
+      if (d.delta && d.delta.type === 'text_delta') { text += d.delta.text; onEvent({ phase: 'text', text }); }
+      else if (d.delta && d.delta.type === 'thinking_delta') onEvent({ phase: 'thinking' });
+    } else if (d.type === 'message_delta') {
+      if (d.delta && d.delta.stop_reason) stop = d.delta.stop_reason;
+      if (d.usage && d.usage.output_tokens) usage.output = d.usage.output_tokens;
+    } else if (d.type === 'error') {
+      throw streamErr(`Claude stopped with an error: ${d.error && d.error.message || 'unknown error'}. Try again.`);
+    }
+  }
+  if (stop === 'refusal') throw streamErr('Claude declined to complete this request. Try again, rephrase the instructions, or choose a different model.');
+  return { text, truncated: stop === 'max_tokens', usage, model: modelUsed, note: fellBack ? 'Part of this reply came from a fallback model.' : '' };
+}
+
+async function callOpenAI({ key, model, system, turns, materials, onEvent, signal, minimal, maxOverride }) {
+  const input = turns.map((t, i) => {
+    if (i === 0 && t.role === 'user' && materials) {
+      const content = [];
+      for (const a of materials.attachments) {
+        content.push({ type: 'input_text', text: `Attachment for ${a.id} (${a.type}; file "${a.name}"):` });
+        content.push({ type: 'input_file', filename: a.name, file_data: `data:${a.mime};base64,${a.b64}` });
+      }
+      content.push({ type: 'input_text', text: materials.text });
+      content.push({ type: 'input_text', text: t.text });
+      return { role: 'user', content };
+    }
+    return { role: t.role, content: t.text };
+  });
+  const body = { model, instructions: system, input, stream: true, store: false };
+  const max = maxOverride || (S.maxOut ? +S.maxOut : 0);
+  if (max) body.max_output_tokens = max;
+  if (!minimal && isOpenAIReasoning(model)) body.reasoning = { effort: S.effort === 'max' ? 'high' : S.effort };
+  const res = await safeFetch('openai', 'https://api.openai.com/v1/responses', {
+    method: 'POST', headers: { 'content-type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify(body), signal,
+  });
+  if (!res.ok) throw await apiError(res, 'openai');
+  onEvent({ phase: 'connected' });
+  let text = ''; let truncated = false; const usage = {}; let modelUsed = model;
+  for await (const ev of sseEvents(res)) {
+    if (ev.data === '[DONE]') break;
+    let d; try { d = JSON.parse(ev.data); } catch { continue; }
+    const type = d.type || ev.event;
+    if (type === 'response.output_text.delta') { text += d.delta || ''; onEvent({ phase: 'text', text }); }
+    else if (/^response\.reasoning/.test(type) || (type === 'response.output_item.added' && d.item && d.item.type === 'reasoning')) onEvent({ phase: 'thinking' });
+    else if (type === 'response.completed' || type === 'response.incomplete') {
+      const r = d.response || {};
+      if (r.usage) { usage.input = r.usage.input_tokens; usage.output = r.usage.output_tokens; usage.cached = r.usage.input_tokens_details && r.usage.input_tokens_details.cached_tokens; }
+      modelUsed = r.model || modelUsed;
+      if (type === 'response.incomplete') {
+        const why = r.incomplete_details && r.incomplete_details.reason;
+        if (why === 'content_filter' && !text) throw streamErr('OpenAI stopped the response (content filter). Try again or choose another model.');
+        truncated = true;
+      }
+    } else if (type === 'response.failed') {
+      const er = d.response && d.response.error;
+      throw streamErr(`OpenAI could not complete the response: ${er && er.message || 'unknown error'}`);
+    } else if (type === 'error') {
+      throw streamErr(`OpenAI returned an error: ${d.message || (d.error && d.error.message) || 'unknown error'}`);
+    }
+  }
+  return { text, truncated, usage, model: modelUsed };
+}
+
+async function callGemini({ key, model, system, turns, materials, onEvent, signal, minimal, maxOverride }) {
+  const contents = turns.map((t, i) => {
+    if (i === 0 && t.role === 'user' && materials) {
+      const parts = [];
+      for (const a of materials.attachments) {
+        parts.push({ text: `Attachment for ${a.id} (${a.type}; file "${a.name}"):` });
+        parts.push({ inlineData: { mimeType: a.mime, data: a.b64 } });
+      }
+      parts.push({ text: materials.text });
+      parts.push({ text: t.text });
+      return { role: 'user', parts };
+    }
+    return { role: t.role === 'assistant' ? 'model' : 'user', parts: [{ text: t.text }] };
+  });
+  const body = { systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: {} };
+  const max = maxOverride || (S.maxOut ? +S.maxOut : 0);
+  if (max) body.generationConfig.maxOutputTokens = max;
+  if (!minimal && /gemini-3/.test(model) && S.effort === 'low') body.generationConfig.thinkingConfig = { thinkingLevel: 'low' };
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model.replace(/^models\//, ''))}:streamGenerateContent?alt=sse`;
+  const res = await safeFetch('gemini', url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify(body), signal });
+  if (!res.ok) throw await apiError(res, 'gemini');
+  onEvent({ phase: 'connected' });
+  let text = ''; let finish = null; const usage = {}; let modelUsed = model;
+  for await (const ev of sseEvents(res)) {
+    let d; try { d = JSON.parse(ev.data); } catch { continue; }
+    if (d.error) throw streamErr(`Gemini returned an error: ${d.error.message || d.error.status}`);
+    if (d.promptFeedback && d.promptFeedback.blockReason) throw streamErr(`Gemini blocked the request (${d.promptFeedback.blockReason}).`);
+    const c = d.candidates && d.candidates[0];
+    if (c) {
+      for (const part of (c.content && c.content.parts) || []) {
+        if (part.thought) onEvent({ phase: 'thinking' });
+        else if (part.text) { text += part.text; onEvent({ phase: 'text', text }); }
+      }
+      if (c.finishReason) finish = c.finishReason;
+    }
+    if (d.usageMetadata) { usage.input = d.usageMetadata.promptTokenCount; usage.output = d.usageMetadata.candidatesTokenCount; usage.cached = d.usageMetadata.cachedContentTokenCount; }
+    if (d.modelVersion) modelUsed = d.modelVersion;
+  }
+  if (finish && !['STOP', 'MAX_TOKENS', 'FINISH_REASON_UNSPECIFIED'].includes(finish) && !text) throw streamErr(`Gemini stopped without a reply (${finish}). Try again or choose another model.`);
+  return { text, truncated: finish === 'MAX_TOKENS', usage, model: modelUsed, note: finish && !['STOP', 'MAX_TOKENS'].includes(finish) ? `Gemini stopped early (${finish}).` : '' };
+}
+
+async function callProvider(args) {
+  const p = S.provider;
+  const fn = p === 'anthropic' ? callAnthropic : p === 'openai' ? callOpenAI : callGemini;
+  return fn({ ...args, key: S.keys[p], model: currentModel() });
+}
+// Retries: drop optional parameters a model rejects, shrink an oversized output limit, and back off on overload.
+async function callWithRetry(args) {
+  // level 0: all optional features; 1: without the Claude beta fallback; 2: without optional parameters.
+  let level = 0; let maxOverride = null; let busyRetries = 0;
+  const isClaude = S.provider === 'anthropic';
+  for (let attempt = 0; attempt < 6; attempt++) {
+    try {
+      return await callProvider({ ...args, maxOverride, noBeta: level >= 1, minimal: isClaude ? level >= 2 : level >= 1 });
+    } catch (e) {
+      if (e.name === 'AbortError' || e.midStream) throw e;
+      const msg = (e.detail || e.message || '');
+      if (e.network && level === 0 && isClaude && claudeCaps(currentModel()).fallbacks) { level = 1; continue; }
+      if (e.status === 400 && /max_tokens|max_output_tokens|maxOutputTokens|output tokens/i.test(msg)) {
+        const cur = maxOverride || (S.maxOut ? +S.maxOut : (isClaude ? claudeCaps(currentModel()).maxTokens : 1e9));
+        const lower = (msg.match(/\d{4,7}/g) || []).map(Number).filter((n) => n >= 1024 && n < cur).sort((a, b) => b - a)[0];
+        if (lower) { maxOverride = lower; continue; }
+      }
+      if (e.status === 400 && isClaude && level === 0 && /fallback|beta/i.test(msg)) { level = 1; continue; }
+      if (e.status === 400 && level < 2 && /thinking|effort|output_config|fallback|beta|reasoning|unsupported|not supported|unknown (parameter|field|name)|extra inputs|invalid json payload|unrecognized/i.test(msg)) {
+        level = 2; args.onEvent({ phase: 'retry', message: 'Retrying with basic settings…' }); continue;
+      }
+      if ((e.status === 429 && !/quota|billing|credit|insufficient/i.test(msg)) || e.status === 529 || (e.status >= 500 && e.status < 600)) {
+        if (busyRetries < 2) {
+          busyRetries++;
+          const wait = e.retryAfter ? Math.min(e.retryAfter * 1000, 30000) : busyRetries * 5000;
+          args.onEvent({ phase: 'retry', message: `${PROVIDERS[S.provider].name} is busy. Retrying in ${Math.round(wait / 1000)} s…` });
+          await sleep(wait, args.signal); continue;
+        }
+      }
+      throw e;
+    }
+  }
+  throw new Error('The request could not be completed after several attempts.');
+}
+
+/* ------------------------------------------------------------------ streaming UI */
+function streamUI(sel) {
+  const box = $(sel); const status = $('.stream-status', box); const meta = $('.stream-meta', box);
+  const body = $('.stream-body', box); const stop = $('.stream-stop', box); const spin = $('.spinner', box); const usageEl = $('.stream-usage', box);
+  let t0 = 0, timer = null, phase = 'send', lastText = '', renderTimer = null;
+  const elapsed = () => { const s = Math.floor((Date.now() - t0) / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+  const render = () => {
+    renderTimer = null;
+    const nearBottom = body.scrollHeight - body.scrollTop - body.clientHeight < 60;
+    body.innerHTML = md(lastText);
+    if (nearBottom) body.scrollTop = body.scrollHeight;
+  };
+  return {
+    start(controller, msg) {
+      box.hidden = false; box.classList.remove('error', 'finished'); spin.hidden = false; stop.hidden = false;
+      body.innerHTML = ''; usageEl.textContent = ''; status.textContent = msg; lastText = ''; phase = 'send';
+      t0 = Date.now(); meta.textContent = '0:00'; clearInterval(timer); timer = setInterval(() => { meta.textContent = elapsed(); }, 1000);
+      stop.onclick = () => controller.abort();
+      box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    },
+    onEvent(ev) {
+      if (ev.phase === 'connected' && phase === 'send') { phase = 'read'; status.textContent = 'Reading the case file…'; }
+      else if (ev.phase === 'thinking' && phase !== 'text') { phase = 'think'; status.textContent = 'Analyzing the record…'; }
+      else if (ev.phase === 'fallback') { status.textContent = 'Continuing on a fallback model…'; }
+      else if (ev.phase === 'retry') { status.textContent = ev.message; }
+      else if (ev.phase === 'text') {
+        phase = 'text'; lastText = ev.text;
+        status.textContent = `Writing… ${fmt(wordCount(ev.text))} words`;
+        if (!renderTimer) renderTimer = setTimeout(render, 250);
+      }
+    },
+    done(res) {
+      clearInterval(timer); clearTimeout(renderTimer); render();
+      spin.hidden = true; stop.hidden = true; box.classList.add('finished');
+      status.textContent = `✓ Done: ${fmt(wordCount(res.text))} words in ${elapsed()}` + (res.truncated ? ' (reply was cut off at the length limit)' : '');
+      const u = res.usage || {};
+      usageEl.textContent = [res.model ? `Model: ${res.model}` : '', u.input ? `input ${fmt(u.input)} tokens` : '', u.cached ? `(${fmt(u.cached)} from cache)` : '', u.output ? `output ${fmt(u.output)} tokens` : '', res.note || ''].filter(Boolean).join(' · ');
+    },
+    fail(e, aborted) {
+      clearInterval(timer); clearTimeout(renderTimer); if (lastText) render();
+      spin.hidden = true; stop.hidden = true; box.classList.add('error');
+      status.textContent = aborted ? 'Stopped. Nothing was saved from this run.' : e.message;
+      if (lastText) usageEl.textContent = 'The partial reply above was not saved.';
+    },
+  };
+}
+function setBusy(b) {
+  S.busy = b;
+  for (const el of $$('[data-run]')) el.disabled = b;
+}
+
+/* ------------------------------------------------------------------ running a stage */
+function validateBeforeRun(stage) {
+  if (S.docs.some((d) => d.status === 'loading')) { toast('Wait until all documents have finished loading.', 'warn'); return false; }
+  if (stage !== 'revise' && !S.docs.some((d) => d.cat === 'input' && d.status === 'ok')) { toast('Add the candidate’s materials first.', 'warn'); go('docs'); return false; }
+  return true;
+}
+async function runStage(stage, extra = {}) {
+  if (S.busy) return;
+  if (!validateBeforeRun(stage)) return;
+  if (S.provider === 'manual') { openCompiled(stage, extra); return; }
+  const p = S.provider;
+  if (!S.keys[p]) { toast(`Add your ${PROVIDERS[p].name} API key first.`, 'warn'); go('setup'); return; }
+  if (!currentModel()) { toast('Choose a model in AI setup.', 'warn'); go('setup'); return; }
+  if (stage === 'draft' && S.analysis && S.analysis.sig !== docsSig() &&
+      !confirm('The documents changed after the pre-draft analysis was run. The draft will use the current documents without the earlier analysis (your answers to its questions are still included). Continue?')) return;
+  const prep = prepareTurns(stage, extra);
+  const est = estimateRequestTokens(prep);
+  const ctx = modelContext();
+  if (ctx && est > ctx * 0.95 && !confirm(`This request (~${fmt(est)} tokens) may exceed the model's context window (${fmt(ctx)} tokens). Send anyway?`)) return;
+
+  const ui = streamUI(stage === 'analysis' ? '#analysisStream' : '#draftStream');
+  const controller = new AbortController();
+  setBusy(true);
+  const n = S.docs.filter((d) => d.status === 'ok').length;
+  ui.start(controller, `Sending ${n} document${n === 1 ? '' : 's'} (~${fmt(est)} tokens) to ${PROVIDERS[p].name}…`);
+  try {
+    const res = await callWithRetry({ system: buildSystem(), turns: prep.turns, materials: prep.materials, signal: controller.signal, onEvent: ui.onEvent });
+    if (!res.text.trim()) throw new Error('The AI returned an empty reply. Try again.');
+    ui.done(res);
+    finishStage(stage, res.text, prep, { extra, usage: res.usage, model: res.model, provider: p, truncated: res.truncated });
+  } catch (e) {
+    const aborted = e && e.name === 'AbortError';
+    ui.fail(e, aborted);
+    if (!aborted) toast('The request did not complete. See the message above.', 'err');
+  } finally {
+    setBusy(false);
+  }
+}
+const MARKERS = [
+  { key: 'analysis', re: 'ANALYSIS' },
+  { key: 'questions', re: 'CLARIFICATION\\s+QUESTIONS' },
+  { key: 'check', re: 'SOURCE\\s+CHECK' },
+  { key: 'memo', re: "DEAN['’`]?S\\s+MEMO|MEMO" },
+  { key: 'verify', re: 'VERIFICATION\\s+TABLE' },
+];
+function splitSections(raw) {
+  const alt = MARKERS.map((m) => `(${m.re})`).join('|');
+  const re = new RegExp(`^[ \\t>#*_]*={2,}[ \\t]*(?:${alt})[ \\t]*={2,}[ \\t*_]*$`, 'gim');
+  const marks = []; let m;
+  while ((m = re.exec(raw))) {
+    const idx = m.slice(1).findIndex((x) => x !== undefined);
+    marks.push({ key: MARKERS[idx].key, start: m.index, end: m.index + m[0].length });
+  }
+  const out = { _found: marks.length, _pre: marks.length ? raw.slice(0, marks[0].start).trim() : raw.trim() };
+  marks.forEach((mk, i) => {
+    let s = raw.slice(mk.end, i + 1 < marks.length ? marks[i + 1].start : raw.length).trim();
+    s = s.replace(/^```[a-z]*\s*\n([\s\S]*?)\n```\s*$/i, '$1').trim();
+    if (!(mk.key in out)) out[mk.key] = s;
+  });
+  return out;
+}
+function parseQuestions(text) {
+  const t = (text || '').trim();
+  if (!t || /^[*_\s]*(none|n\/a|no (clarification )?questions)\b/i.test(t)) return [];
+  const qs = []; let cur = null;
+  for (const line of t.split('\n')) {
+    const top = /^\s{0,1}(?:\d+[.)]|[-*•])\s+(.*)$/.exec(line);
+    if (top) { if (cur) qs.push(cur.trim()); cur = top[1]; }
+    else if (cur && line.trim()) cur += (/^\s+[-*•]/.test(line) ? ' — ' + line.trim().replace(/^[-*•]\s*/, '') : ' ' + line.trim());
+  }
+  if (cur) qs.push(cur.trim());
+  if (!qs.length) qs.push(t);
+  return qs.map((q) => q.replace(/\s+/g, ' '));
+}
+function finishStage(stage, text, prep, meta) {
+  if (stage !== 'analysis') saveEditorToVersion();
+  S.convo = [...prep.turns, { role: 'assistant', text }];
+  S.convoMaterials = prep.materials; S.convoSig = prep.sig;
+  markDirty();
+  if (stage === 'analysis') {
+    const sec = splitSections(text);
+    const prev = S.analysis;
+    S.analysis = {
+      raw: text, analysisMd: sec.analysis || (sec._found ? '' : text), questionsMd: sec.questions || '',
+      questions: parseQuestions(sec.questions), answers: [], notes: prev ? prev.notes || '' : '',
+      turns: S.convo.slice(), materials: prep.materials, sig: prep.sig,
+      at: Date.now(), model: meta.model, provider: meta.provider, usage: meta.usage, truncated: meta.truncated,
+    };
+    renderAnalysis(); updateSteps();
+    toast(S.analysis.questions.length ? `Analysis ready, with ${S.analysis.questions.length} question${S.analysis.questions.length === 1 ? '' : 's'} for you.` : 'Analysis ready. No clarification questions.', 'ok');
+    $('#analysisResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  const sec = splitSections(text);
+  const v = {
+    id: uid(), at: Date.now(), stage,
+    note: stage === 'revise' ? 'Revision: “' + (meta.extra.request || '').slice(0, 70) + ((meta.extra.request || '').length > 70 ? '…' : '') + '”' : (S.drafts.length ? 'New draft' : 'First draft') + (prep.afterAnalysis ? ' (with analysis)' : ''),
+    raw: text, check: sec.check || '', memo: sec.memo || (sec._found ? '' : text), verify: sec.verify || '',
+    markers: sec._found, memoHtml: null, model: meta.model, provider: meta.provider, usage: meta.usage, truncated: meta.truncated,
+  };
+  if (!v.memo && sec._pre) v.memo = sec._pre;
+  S.drafts.push(v); S.cur = S.drafts.length - 1;
+  if (stage === 'revise') $('#reviseText').value = '';
+  renderDraft(); selectTab('memo'); updateSteps();
+  toast(stage === 'revise' ? 'Revised draft ready.' : 'Draft ready.', 'ok');
+  $('#draftResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ------------------------------------------------------------------ compiled prompt (copy & paste mode, and “View prompt”) */
+let compiledState = null;
+function compilePrompt(stage, extra, mode) {
+  const prep = prepareTurns(stage, extra);
+  const last = prep.turns[prep.turns.length - 1];
+  if (mode === 'followup' && !prep.fresh) return { text: last.text, prep };
+  let out = `# INSTRUCTIONS\n\n${buildSystem()}\n\n# CASE FILE\n\n${prep.materials.text}\n\n`;
+  prep.turns.forEach((t, i) => {
+    if (i === 0) out += `# REQUEST\n\n${t.text}\n\n`;
+    else if (t.role === 'assistant') out += `# YOUR EARLIER REPLY\n\n${t.text}\n\n`;
+    else out += `# FOLLOW-UP REQUEST\n\n${t.text}\n\n`;
+  });
+  return { text: out.trim(), prep };
+}
+function openCompiled(stage, extra = {}) {
+  if (!validateBeforeRun(stage)) return;
+  const manual = S.provider === 'manual';
+  compiledState = { stage, extra, mode: 'full' };
+  S.pendingManual = { stage, extra };
+  const names = { analysis: 'Pre-draft analysis prompt', draft: 'Drafting prompt', revise: 'Revision prompt' };
+  $('#compiledTitle').textContent = names[stage];
+  $('#compiledIntro').innerHTML = manual
+    ? 'Copy this prompt into your AI chat (Claude.ai, Gemini, ChatGPT or your institution\'s approved tool). When the reply is complete, copy all of it and choose <b>Paste the AI\'s reply</b>.'
+    : 'This is exactly what will be sent to the AI, as text. PDFs set to “Send PDF” are attached separately.';
+  $('#btnCompiledPaste').hidden = !manual;
+  refreshCompiled();
+  $('#dlgCompiled').returnValue = '';
+  $('#dlgCompiled').showModal();
+}
+function refreshCompiled() {
+  const { stage, extra, mode } = compiledState;
+  const c = compilePrompt(stage, extra, mode);
+  $('#compiledArea').value = c.text;
+  const canFollow = !c.prep.fresh;
+  $('#compiledSeg').hidden = !canFollow;
+  for (const b of $$('#compiledSeg button')) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+  const att = c.prep.materials.attachments;
+  $('#compiledAttach').innerHTML = att.length && (mode === 'full' || c.prep.fresh)
+    ? `<div class="callout warn mt0 mb0"><b>Attach these PDFs in the chat as well</b> (they are sent as files, not text): ${att.map((a) => `${esc(a.id)} · ${esc(a.name)}`).join('; ')}</div>` : '';
+  $('#compiledMeta').textContent = `${fmt(wordCount(c.text))} words · ~${fmt(estTokens(c.text))} tokens` +
+    (canFollow ? (mode === 'full' ? ' · Use the full prompt in a new chat.' : ' · Paste into the same chat where you ran the earlier step.') : '');
+}
+$('#compiledSeg').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-mode]'); if (!b) return;
+  compiledState.mode = b.dataset.mode; refreshCompiled();
+});
+$('#btnCompiledCopy').addEventListener('click', async () => { toast(await copyText($('#compiledArea').value) ? 'Prompt copied.' : 'Could not copy. Select the text and copy it manually.', 'ok'); });
+$('#btnCompiledDownload').addEventListener('click', () => {
+  downloadBlob(new Blob([$('#compiledArea').value], { type: 'text/plain;charset=utf-8' }), `${safeFileName(S.caseInfo.candidate || 'Case')} - ${compiledState.stage} prompt.txt`);
+});
+$('#btnCompiledPaste').addEventListener('click', () => { $('#dlgCompiled').close(); openImport(); });
+function openImport() {
+  const st = S.pendingManual && S.pendingManual.stage;
+  if (!st) { toast('Copy a prompt first.', 'warn'); return; }
+  $('#importTitle').textContent = st === 'analysis' ? 'Paste the analysis reply' : 'Paste the drafting reply';
+  $('#importArea').value = '';
+  $('#dlgImport').returnValue = '';
+  $('#dlgImport').showModal();
+}
+$('#dlgImport').addEventListener('close', () => {
+  if ($('#dlgImport').returnValue !== 'import') return;
+  const text = $('#importArea').value.trim();
+  if (!text || !S.pendingManual) return;
+  const { stage, extra } = S.pendingManual;
+  const prep = prepareTurns(stage, extra);
+  const sec = splitSections(text);
+  if (!sec._found) toast('No section markers were found, so the whole reply was treated as the ' + (stage === 'analysis' ? 'analysis.' : 'memo.'), 'warn', 7000);
+  finishStage(stage, text, prep, { extra, usage: null, model: 'pasted reply', provider: 'manual', truncated: false });
+  S.pendingManual = null;
+});
+
+/* ------------------------------------------------------------------ 4. analysis panel */
+function renderAnalysis() {
+  const manual = S.provider === 'manual';
+  const a = S.analysis;
+  $('#analysisActions').innerHTML = manual
+    ? `<button class="btn primary lg" type="button" data-run id="btnRunAnalysis">${a ? 'Copy a new analysis prompt' : 'Copy analysis prompt'}</button>
+       <button class="btn" type="button" data-run id="btnPasteAnalysis">Paste the AI's reply…</button>
+       <span style="flex:1"></span><button class="linkbtn" type="button" data-goto="draft">Skip to drafting →</button>`
+    : `<button class="btn primary lg" type="button" data-run id="btnRunAnalysis">${a ? 'Run analysis again' : 'Run pre-draft analysis'}</button>
+       <button class="btn" type="button" id="btnViewAnalysisPrompt">View prompt</button>
+       <span style="flex:1"></span><button class="linkbtn" type="button" data-goto="draft">Skip to drafting →</button>`;
+  const okDocs = S.docs.filter((d) => d.status === 'ok');
+  $('#analysisHint').textContent = !okDocs.some((d) => d.cat === 'input') ? 'Add the candidate’s materials in the Documents step first.'
+    : manual ? 'Copy & paste mode: no API key is used.'
+    : `${okDocs.length} document${okDocs.length === 1 ? '' : 's'} will be sent to ${PROVIDERS[S.provider].name} (${currentModel()}). A thorough analysis of a full dossier usually takes 1–4 minutes.`;
+  for (const el of $$('[data-run]')) el.disabled = S.busy;
+  $('#analysisResult').hidden = !a;
+  if (!a) return;
+  $('#analysisStale').hidden = a.sig === docsSig();
+  $('#analysisMeta').textContent = `${fmtTime(a.at)} · ${a.model || ''}${a.truncated ? ' · reply was cut off at the length limit' : ''}`;
+  $('#analysisMd').innerHTML = md(a.analysisMd || a.raw);
+  $('#questions').innerHTML = a.questions.length
+    ? a.questions.map((q, i) => `<div class="q-item"><div class="q-text"><span class="qn">Q${i + 1}.</span>${md(q).replace(/^<p>|<\/p>\s*$/g, '')}</div>
+        <textarea rows="2" data-answer="${i}" placeholder="Your answer (optional)">${esc(a.answers[i] || '')}</textarea></div>`).join('')
+    : '<div class="callout ok mt0 mb0">The AI did not need any clarification. You can go straight to the draft.</div>';
+  $('#analysisNotes').value = a.notes || '';
+}
+$('#questions').addEventListener('input', (e) => {
+  const i = e.target.dataset.answer; if (i == null || !S.analysis) return;
+  S.analysis.answers[+i] = e.target.value; markDirty();
+});
+$('#analysisNotes').addEventListener('input', (e) => { if (S.analysis) { S.analysis.notes = e.target.value; markDirty(); } });
+$('#panel-analysis').addEventListener('click', (e) => {
+  const id = e.target.closest('button') && e.target.closest('button').id;
+  if (id === 'btnRunAnalysis') runStage('analysis');
+  else if (id === 'btnPasteAnalysis') { S.pendingManual = { stage: 'analysis', extra: {} }; openImport(); }
+  else if (id === 'btnViewAnalysisPrompt') openCompiled('analysis');
+});
+$('#btnCopyAnalysis').addEventListener('click', async () => { if (S.analysis) toast(await copyText(S.analysis.raw) ? 'Analysis copied.' : 'Could not copy.', 'ok'); });
+
+/* ------------------------------------------------------------------ 5. draft panel */
+function renderDraft() {
+  const manual = S.provider === 'manual';
+  const has = S.drafts.length > 0;
+  $('#draftActions').innerHTML = manual
+    ? `<button class="btn primary lg" type="button" data-run id="btnRunDraft">${has ? 'Copy a new drafting prompt' : 'Copy drafting prompt'}</button>
+       <button class="btn" type="button" data-run id="btnPasteDraft">Paste the AI's reply…</button>`
+    : `<button class="btn primary lg" type="button" data-run id="btnRunDraft">${has ? 'Generate a new draft' : 'Generate draft'}</button>
+       <button class="btn" type="button" id="btnViewDraftPrompt">View prompt</button>`;
+  const a = S.analysis;
+  const okDocs = S.docs.filter((d) => d.status === 'ok');
+  $('#draftHint').innerHTML = !okDocs.some((d) => d.cat === 'input') ? 'Add the candidate’s materials in the Documents step first.'
+    : a && a.sig === docsSig() ? `The draft builds on your pre-draft analysis${a.questions.length ? ` and your answers to ${a.answers.filter((x) => (x || '').trim()).length} of ${a.questions.length} questions` : ''}.`
+    : a ? 'Documents changed after the analysis. The AI will re-analyze the current documents as it drafts. Your answers are still included.'
+    : 'No pre-draft analysis has been run. The AI will analyze the record and draft in one step, listing any open questions at the top of the source check.';
+  $('#reviseActions').innerHTML = manual
+    ? `<button class="btn primary" type="button" data-run id="btnRevise">Copy revision prompt</button><button class="btn" type="button" data-run id="btnPasteRevise">Paste the AI's reply…</button>`
+    : `<button class="btn primary" type="button" data-run id="btnRevise">Revise draft</button><button class="btn" type="button" id="btnViewRevisePrompt">View prompt</button>`;
+  for (const el of $$('[data-run]')) el.disabled = S.busy;
+  $('#draftEmpty').hidden = has;
+  $('#draftResult').hidden = !has;
+  if (!has) return;
+  $('#versionSelect').innerHTML = S.drafts.map((v, i) => `<option value="${i}">v${i + 1} · ${esc(v.note)} · ${esc(fmtTime(v.at))}</option>`).join('');
+  $('#versionSelect').value = String(S.cur);
+  loadVersion(S.cur, false);
+}
+function saveEditorToVersion() {
+  const v = S.drafts[S.cur];
+  if (v) v.memoHtml = $('#memoEditor').innerHTML;
+}
+function loadVersion(i, saveCurrent = true) {
+  if (saveCurrent) saveEditorToVersion();
+  S.cur = i; const v = S.drafts[i]; if (!v) return;
+  const ed = $('#memoEditor');
+  ed.innerHTML = v.memoHtml ? (window.DOMPurify ? DOMPurify.sanitize(v.memoHtml) : v.memoHtml) : md(v.memo);
+  applyEditorFont();
+  $('#checkMd').innerHTML = v.check ? md(v.check) : '<p class="hint">No source check section was found in this reply. See the Full response tab.</p>';
+  $('#verifyMd').innerHTML = v.verify ? md(v.verify) : '<p class="hint">No verification table was found in this reply. See the Full response tab.</p>';
+  $('#rawOut').textContent = v.raw;
+  $('#checkCount').textContent = v.check ? String($$('#checkMd li').length) : '–';
+  $('#verifyCount').textContent = v.verify ? String(Math.max(0, $$('#verifyMd tr').length - 1)) : '–';
+  const ids = docIds();
+  $('#docKey').innerHTML = '<b>Document key:</b> ' + S.docs.filter((d) => d.status === 'ok').map((d) => `${esc(ids[d.id])} = ${esc(d.name)}`).join(' · ');
+  const warns = [];
+  if (v.truncated) warns.push('The reply reached the length limit and may be cut off. Increase “Maximum output tokens” in AI setup › Advanced, then generate again.');
+  if (!v.markers) warns.push('The reply did not use the expected section markers, so everything is shown as the memo. Check the Full response tab.');
+  if (/\[[A-Z][A-Z0-9 ,.'’\-/&]{3,}\]/.test(v.memo)) warns.push('The memo contains bracketed placeholders (e.g., [DATE]). Fill them in before finalizing.');
+  $('#draftWarn').hidden = !warns.length;
+  $('#draftWarn').innerHTML = warns.map(esc).join('<br>');
+  updateWordCount();
+}
+function updateWordCount() {
+  const w = wordCount($('#memoEditor').innerText);
+  const tl = (S.caseInfo.targetLength || '').trim();
+  $('#wordCount').textContent = `${fmt(w)} words${tl ? ' · target: ' + tl : ''}`;
+}
+function applyEditorFont() {
+  const ed = $('#memoEditor');
+  ed.style.fontFamily = `"${S.exportPrefs.font}", ${/Calibri|Arial/.test(S.exportPrefs.font) ? 'Arial, sans-serif' : 'Georgia, serif'}`;
+  ed.style.fontSize = S.exportPrefs.size + 'pt';
+  $('#expFont').value = S.exportPrefs.font; $('#expSize').value = String(S.exportPrefs.size); $('#expPageNums').checked = !!S.exportPrefs.pageNumbers;
+}
+function selectTab(name) {
+  for (const b of $$('.tabs button')) b.setAttribute('aria-selected', String(b.dataset.tab === name));
+  for (const p of $$('[data-tabpanel]')) p.hidden = p.dataset.tabpanel !== name;
+}
+$('.tabs').addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) selectTab(b.dataset.tab); });
+$('#versionSelect').addEventListener('change', (e) => loadVersion(+e.target.value));
+const onEditorInput = debounce(() => { saveEditorToVersion(); updateWordCount(); }, 300);
+$('#memoEditor').addEventListener('input', () => { markDirty(); onEditorInput(); });
+$('.editbar').addEventListener('mousedown', (e) => { if (e.target.closest('button[data-cmd]')) e.preventDefault(); });
+$('.editbar').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-cmd]'); if (!b) return;
+  $('#memoEditor').focus(); document.execCommand(b.dataset.cmd, false, null);
+  saveEditorToVersion(); markDirty();
+});
+$('#expFont').addEventListener('change', (e) => { S.exportPrefs.font = e.target.value; applyEditorFont(); saveSettings(); });
+$('#expSize').addEventListener('change', (e) => { S.exportPrefs.size = +e.target.value; applyEditorFont(); saveSettings(); });
+$('#expPageNums').addEventListener('change', (e) => { S.exportPrefs.pageNumbers = e.target.checked; saveSettings(); });
+$('#reviseChips').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  const ta = $('#reviseText'); ta.value = (ta.value.trim() ? ta.value.trim() + '\n' : '') + b.textContent + '.'; ta.focus();
+});
+function reviseExtra() {
+  saveEditorToVersion();
+  const request = $('#reviseText').value.trim();
+  if (!request) { toast('Describe the changes you want first.', 'warn'); $('#reviseText').focus(); return null; }
+  return { request, memoMd: htmlToMarkdown($('#memoEditor')) };
+}
+$('#panel-draft').addEventListener('click', (e) => {
+  const btn = e.target.closest('button'); if (!btn) return;
+  switch (btn.id) {
+    case 'btnRunDraft': runStage('draft'); break;
+    case 'btnPasteDraft': S.pendingManual = { stage: 'draft', extra: {} }; openImport(); break;
+    case 'btnViewDraftPrompt': openCompiled('draft'); break;
+    case 'btnRevise': { const x = reviseExtra(); if (x) runStage('revise', x); break; }
+    case 'btnPasteRevise': { const x = reviseExtra(); if (x) { S.pendingManual = { stage: 'revise', extra: x }; openImport(); } break; }
+    case 'btnViewRevisePrompt': { const x = reviseExtra(); if (x) openCompiled('revise', x); break; }
+  }
+});
+
+/* ------------------------------------------------------------------ exports */
+const MEMO_LABEL = /^(TO|FROM|DATE|RE|SUBJECT|CC|THROUGH|VIA)\s*:$/i;
+async function buildDocx(container, { title }) {
+  const D = await loadLib('docx');
+  const P = S.exportPrefs; const size = P.size * 2; const font = P.font;
+  let olInstance = 0;
+  const tabStops = [{ type: D.TabStopType.LEFT, position: 1440 }];
+  function collect(node, f = {}, acc = []) {
+    for (const ch of node.childNodes) {
+      if (ch.nodeType === 3) { const t = ch.nodeValue.replace(/\s+/g, ' '); if (t) acc.push({ text: t, ...f }); continue; }
+      if (ch.nodeType !== 1) continue;
+      const tag = ch.tagName;
+      if (tag === 'BR') { acc.push({ br: true }); continue; }
+      if (tag === 'UL' || tag === 'OL' || tag === 'TABLE' || tag === 'SCRIPT' || tag === 'STYLE') continue;
+      const g = { ...f };
+      if (tag === 'STRONG' || tag === 'B') g.bold = true;
+      if (tag === 'EM' || tag === 'I') g.italics = true;
+      if (tag === 'U') g.underline = true;
+      if (tag === 'S' || tag === 'DEL' || tag === 'STRIKE') g.strike = true;
+      if (tag === 'SUP') g.sup = true;
+      if (tag === 'SUB') g.sub = true;
+      if (tag === 'CODE') g.code = true;
+      const st = ch.getAttribute('style') || '';
+      if (/font-weight:\s*(bold|[6-9]00)/i.test(st)) g.bold = true;
+      if (/font-style:\s*italic/i.test(st)) g.italics = true;
+      if (/text-decoration[^;]*underline/i.test(st)) g.underline = true;
+      collect(ch, g, acc);
+    }
+    return acc;
+  }
+  function toRuns(acc) {
+    const out = []; let lineStart = true; let afterLabel = false;
+    acc.forEach((r, i) => {
+      if (r.br) { if (!lineStart || out.length) out.push(new D.TextRun({ text: '', break: 1 })); lineStart = true; afterLabel = false; return; }
+      let t = r.text;
+      if (lineStart) t = t.replace(/^\s+/, '');
+      const next = acc[i + 1];
+      if (!next || next.br) t = t.replace(/\s+$/, '');
+      if (!t) return;
+      const tabbed = afterLabel; // memo header (TO:/FROM:/…): align the value on a real tab stop
+      if (tabbed) t = t.replace(/^\s+/, '');
+      out.push(new D.TextRun({ ...(tabbed ? { children: [new D.Tab(), t] } : { text: t }), bold: r.bold || undefined, italics: r.italics || undefined, underline: r.underline ? {} : undefined,
+        strike: r.strike || undefined, superScript: r.sup || undefined, subScript: r.sub || undefined, font: r.code ? 'Courier New' : undefined }));
+      afterLabel = !!r.bold && MEMO_LABEL.test(t.trim());
+      lineStart = false;
+    });
+    return out;
+  }
+  function para(el, opts = {}, fmtBase = {}) {
+    const runs = toRuns(collect(el, fmtBase));
+    if (!runs.length) return null;
+    return new D.Paragraph({ children: runs, tabStops, ...opts });
+  }
+  function list(el, out, level) {
+    const ordered = el.tagName === 'OL'; const inst = ordered ? ++olInstance : 0;
+    for (const li of el.children) {
+      if (li.tagName !== 'LI') continue;
+      const span = document.createElement('span'); const nested = [];
+      for (const c of li.childNodes) {
+        if (c.nodeType === 1 && (c.tagName === 'UL' || c.tagName === 'OL')) nested.push(c);
+        else if (c.nodeType === 1 && c.tagName === 'P') { if (span.childNodes.length) span.appendChild(document.createElement('br')); for (const k of c.childNodes) span.appendChild(k.cloneNode(true)); }
+        else span.appendChild(c.cloneNode(true));
+      }
+      const lvl = Math.min(level, 2);
+      out.push(new D.Paragraph({ children: toRuns(collect(span)), spacing: { after: 80 },
+        ...(ordered ? { numbering: { reference: 'memo-ol', level: lvl, instance: inst } } : { bullet: { level: lvl } }) }));
+      for (const n of nested) list(n, out, level + 1);
+    }
+  }
+  function table(el) {
+    const rows = [...el.querySelectorAll('tr')].filter((r) => r.closest('table') === el);
+    return new D.Table({
+      width: { size: 100, type: D.WidthType.PERCENTAGE },
+      rows: rows.map((r, ri) => new D.TableRow({
+        tableHeader: ri === 0 && !!r.querySelector('th'),
+        children: [...r.children].map((c) => {
+          const kids = []; blocks(c, kids, {}, c.tagName === 'TH' ? { bold: true } : {});
+          return new D.TableCell({ children: kids.length ? kids : [new D.Paragraph({ children: [] })],
+            margins: { top: 60, bottom: 60, left: 100, right: 100 },
+            columnSpan: c.colSpan > 1 ? c.colSpan : undefined,
+            shading: c.tagName === 'TH' ? { fill: 'EFEFEF', type: D.ShadingType.CLEAR, color: 'auto' } : undefined });
+        }),
+      })),
+    });
+  }
+  function blocks(node, out, paraOpts = {}, fmtBase = {}) {
+    let buf = null;
+    const flush = () => { if (buf) { const p = para(buf, paraOpts, fmtBase); if (p) out.push(p); buf = null; } };
+    for (const ch of node.childNodes) {
+      const tag = ch.nodeType === 1 ? ch.tagName : null;
+      if (tag && BLOCK_TAGS.has(tag)) {
+        flush();
+        if (/^H[1-6]$/.test(tag)) {
+          const runs = toRuns(collect(ch, { bold: true }));
+          if (runs.length) out.push(new D.Paragraph({ children: runs, heading: D.HeadingLevel['HEADING_' + tag[1]], keepNext: true }));
+        } else if (tag === 'P') { const p = para(ch, paraOpts, fmtBase); if (p) out.push(p); }
+        else if (tag === 'UL' || tag === 'OL') list(ch, out, 0);
+        else if (tag === 'TABLE') { out.push(table(ch)); out.push(new D.Paragraph({ children: [] })); }
+        else if (tag === 'HR') out.push(new D.Paragraph({ children: [], border: { bottom: { style: D.BorderStyle.SINGLE, size: 6, color: '808080', space: 1 } } }));
+        else if (tag === 'BLOCKQUOTE') blocks(ch, out, { indent: { left: 720 } }, fmtBase);
+        else if (tag === 'PRE') for (const l of ch.textContent.split('\n')) out.push(new D.Paragraph({ children: [new D.TextRun({ text: l, font: 'Courier New' })] }));
+        else blocks(ch, out, paraOpts, fmtBase);
+      } else if (ch.nodeType === 1 || ch.nodeType === 3) {
+        if (!buf) buf = document.createElement('span');
+        buf.appendChild(ch.cloneNode(true));
+      }
+    }
+    flush();
+  }
+  const children = []; blocks(container, children);
+  if (!children.length) children.push(new D.Paragraph({ children: [] }));
+  const hstyle = (sz, before = 240) => ({ run: { font, size: sz, bold: true, color: '000000' }, paragraph: { spacing: { before, after: 120 } } });
+  const doc = new D.Document({
+    creator: S.caseInfo.author || 'Dean', title,
+    styles: { default: {
+      document: { run: { font, size }, paragraph: { spacing: { after: 200, line: 240 } } },
+      heading1: hstyle(size + 4), heading2: hstyle(size + 2), heading3: hstyle(size, 200), heading4: hstyle(size, 160), heading5: hstyle(size, 160), heading6: hstyle(size, 160),
+    } },
+    numbering: { config: [{ reference: 'memo-ol', levels: [0, 1, 2].map((l) => ({ level: l,
+      format: [D.LevelFormat.DECIMAL, D.LevelFormat.LOWER_LETTER, D.LevelFormat.LOWER_ROMAN][l], text: `%${l + 1}.`, alignment: D.AlignmentType.START,
+      style: { paragraph: { indent: { left: 720 * (l + 1), hanging: 360 } } } })) }] },
+    sections: [{
+      properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
+      footers: P.pageNumbers ? { default: new D.Footer({ children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ children: [D.PageNumber.CURRENT], size: size - 2 })] })] }) } : undefined,
+      children,
+    }],
+  });
+  return D.Packer.toBlob(doc);
+}
+async function exportMemo() {
+  saveEditorToVersion();
+  const btn = $('#btnDocx'); btn.disabled = true;
+  try {
+    const name = `Dean memo - ${safeFileName(S.caseInfo.candidate || 'candidate')} - v${S.cur + 1}.docx`;
+    downloadBlob(await buildDocx($('#memoEditor'), { title: `Dean's memorandum: ${S.caseInfo.candidate || ''}` }), name);
+    toast('Word file downloaded.', 'ok');
+  } catch (e) { toast('Export failed: ' + e.message, 'err', 8000); }
+  finally { btn.disabled = false; }
+}
+async function exportPacket() {
+  const v = S.drafts[S.cur]; if (!v) return;
+  const ids = docIds(); const a = S.analysis;
+  const c = document.createElement('div');
+  let html = `<h1>Editorial review packet</h1><p><b>Candidate:</b> ${esc(S.caseInfo.candidate || '[not provided]')}<br><b>Proposed action:</b> ${esc(actionPhrase())}<br><b>Draft version:</b> v${S.cur + 1} (${esc(v.note)}), ${esc(fmtTime(v.at))}<br><b>Prepared with:</b> ${esc(v.model || '')}</p>
+    <p><i>For the dean's review only. The source check and verification table are editorial aids and are not part of the memo.</i></p>
+    <h2>Source check</h2>${md(v.check || '_Not provided in this reply._')}
+    <h2>Verification table</h2>${md(v.verify || '_Not provided in this reply._')}
+    <h2>Document key</h2><ul>${S.docs.filter((d) => d.status === 'ok').map((d) => `<li>${esc(ids[d.id])}: ${esc(d.name)} (${esc(d.type)})</li>`).join('')}</ul>`;
+  if (a) {
+    html += `<h2>Clarification questions and answers</h2>` + (a.questions.length ? '<ol>' + a.questions.map((q, i) => `<li>${esc(q)}<br><i>Answer:</i> ${esc((a.answers[i] || '').trim() || 'No answer provided')}</li>`).join('') + '</ol>' : '<p>None.</p>');
+    if ((a.notes || '').trim()) html += `<p><b>Additional guidance:</b> ${esc(a.notes)}</p>`;
+    html += `<h2>Pre-draft analysis</h2>${md(a.analysisMd || a.raw)}`;
+  }
+  c.innerHTML = window.DOMPurify ? DOMPurify.sanitize(html) : html;
+  try {
+    downloadBlob(await buildDocx(c, { title: 'Editorial review packet' }), `Review packet - ${safeFileName(S.caseInfo.candidate || 'candidate')} - v${S.cur + 1}.docx`);
+    toast('Review packet downloaded.', 'ok');
+  } catch (e) { toast('Export failed: ' + e.message, 'err', 8000); }
+}
+async function copyMemo() {
+  saveEditorToVersion();
+  const ed = $('#memoEditor');
+  const html = `<div style="font-family:'${S.exportPrefs.font}',serif;font-size:${S.exportPrefs.size}pt">${ed.innerHTML}</div>`;
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }), 'text/plain': new Blob([ed.innerText], { type: 'text/plain' }) })]);
+    toast('Memo copied with formatting. Paste it into Word or an email.', 'ok');
+  } catch {
+    const r = document.createRange(); r.selectNodeContents(ed); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    let ok = false; try { ok = document.execCommand('copy'); } catch { /* ignore */ }
+    sel.removeAllRanges();
+    toast(ok ? 'Memo copied.' : 'Could not copy automatically. Select the memo and press Ctrl/Cmd+C.', ok ? 'ok' : 'warn');
+  }
+}
+function printMemo() {
+  saveEditorToVersion();
+  const w = window.open('', '_blank');
+  if (!w) { toast('Allow pop-ups for this page to print.', 'warn'); return; }
+  const f = S.exportPrefs;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Dean's memorandum: ${esc(S.caseInfo.candidate || '')}</title><style>
+    @page{margin:1in} body{font-family:"${f.font}",Georgia,serif;font-size:${f.size}pt;line-height:1.35;color:#000;margin:0}
+    h1,h2,h3,h4{font-size:1em;margin:1.1em 0 .4em} p{margin:0 0 .85em} table{border-collapse:collapse;width:100%} td,th{border:1px solid #777;padding:4px 6px;vertical-align:top}
+    hr{border:0;border-top:1px solid #777;margin:.8em 0 1.1em}</style></head><body>${$('#memoEditor').innerHTML}</body></html>`);
+  w.document.close(); w.focus();
+  setTimeout(() => w.print(), 300);
+}
+$('#btnDocx').addEventListener('click', exportMemo);
+$('#btnPacket').addEventListener('click', exportPacket);
+$('#btnCopyMemo').addEventListener('click', copyMemo);
+$('#btnPrint').addEventListener('click', printMemo);
+
+/* ------------------------------------------------------------------ case files */
+function saveCase() {
+  saveEditorToVersion();
+  const data = {
+    app: 'pt-memo-drafter', version: 1, savedAt: new Date().toISOString(),
+    caseInfo: S.caseInfo,
+    docs: S.docs.filter((d) => d.status === 'ok').map((d) => serializeDoc(d)),
+    analysis: S.analysis ? { ...S.analysis, materials: null } : null,
+    drafts: S.drafts, cur: S.cur, convo: S.convo, convoSig: S.convoSig,
+  };
+  downloadBlob(new Blob([JSON.stringify(data)], { type: 'application/json' }), `PT case - ${safeFileName(S.caseInfo.candidate || 'untitled')}.json`);
+  S.dirty = false;
+  toast('Case saved. The file contains confidential materials, so store it securely. It does not include your API key.', 'ok', 7000);
+}
+async function openCase(file) {
+  let data;
+  try { data = JSON.parse(await file.text()); } catch { toast('That file is not a valid case file.', 'err'); return; }
+  if (!data || data.app !== 'pt-memo-drafter') { toast('That file was not saved by this app.', 'err'); return; }
+  S.caseInfo = data.caseInfo || {};
+  S.docs = (data.docs || []).map((d) => ({ ...d, status: 'ok', lib: false }));
+  S.drafts = data.drafts || []; S.cur = Math.min(data.cur ?? S.drafts.length - 1, S.drafts.length - 1);
+  S.convo = data.convo || [];
+  const sigNow = docsSig();
+  S.convoSig = data.convoSig === sigNow ? sigNow : null;
+  S.convoMaterials = S.convoSig ? buildMaterials() : null;
+  S.analysis = data.analysis || null;
+  if (S.analysis) S.analysis.materials = S.analysis.sig === sigNow ? buildMaterials() : null;
+  if (S.analysis && !S.analysis.materials) S.analysis.sig = 'stale';
+  await loadLibrary();
+  for (const cat of ['template', 'criteria']) if (S.rememberLib[cat]) await syncLibrary(cat);
+  S.dirty = false;
+  renderAll();
+  toast(`Opened case: ${S.caseInfo.candidate || 'untitled'}.`, 'ok');
+  go(S.drafts.length ? 'draft' : 'docs');
+}
+function newCase() {
+  if (S.dirty && !confirm('Start a new case? Unsaved candidate materials, analysis and drafts will be cleared. Example memos and criteria stay.')) return;
+  const office = {};
+  for (const k of OFFICE_FIELDS) office[k] = S.caseInfo[k] || '';
+  S.caseInfo = { ...office, action: ACTIONS[0].value, memoDate: todayISO() };
+  S.docs = S.docs.filter((d) => d.cat !== 'input');
+  S.analysis = null; S.drafts = []; S.cur = -1; S.convo = []; S.convoMaterials = null; S.convoSig = null; S.pendingManual = null;
+  $('#reviseText').value = '';
+  for (const id of ['#analysisStream', '#draftStream']) $(id).hidden = true;
+  S.dirty = false;
+  renderAll(); go('case');
+}
+$('#btnSaveCase').addEventListener('click', saveCase);
+$('#btnOpenCase').addEventListener('click', () => { if (S.dirty && !confirm('Open another case? Unsaved changes to the current case will be lost.')) return; $('#caseFile').click(); });
+$('#caseFile').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) openCase(f); });
+$('#btnNewCase').addEventListener('click', newCase);
+window.addEventListener('beforeunload', (e) => { if (S.dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ------------------------------------------------------------------ wiring: setup */
+for (const r of $$('input[name=provider]')) r.addEventListener('change', () => {
+  S.provider = r.value; saveSettings(); renderSetup(); renderDocs();
+});
+$('#apiKey').addEventListener('input', (e) => {
+  S.keys[S.provider] = e.target.value.trim(); S.conn[S.provider] = '';
+  saveSettings(); updateSteps();
+});
+$('#apiKey').addEventListener('change', () => { if (S.keys[S.provider] && !S.modelLists[S.provider]) testConnection(); });
+$('#btnShowKey').addEventListener('click', () => {
+  const i = $('#apiKey'); const show = i.type === 'password';
+  i.type = show ? 'text' : 'password'; $('#btnShowKey').textContent = show ? 'Hide' : 'Show';
+});
+$('#rememberKey').addEventListener('change', (e) => { S.rememberKey = e.target.checked; saveSettings(); });
+$('#btnConnect').addEventListener('click', testConnection);
+$('#modelSelect').addEventListener('change', (e) => {
+  if (e.target.value === '__custom') { $('#modelCustom').hidden = false; $('#modelCustom').value = ''; $('#modelCustom').focus(); return; }
+  S.model[S.provider] = e.target.value; saveSettings(); updateSteps(); renderDocs();
+});
+$('#modelCustom').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
+$('#modelCustom').addEventListener('change', (e) => {
+  const v = e.target.value.trim(); if (!v) return;
+  S.model[S.provider] = v; saveSettings(); renderModelSelect(); updateSteps();
+});
+$('#effort').addEventListener('change', (e) => { S.effort = e.target.value; saveSettings(); });
+$('#maxOut').addEventListener('change', (e) => { const v = parseInt(e.target.value, 10); S.maxOut = v >= 1024 ? String(v) : ''; e.target.value = S.maxOut; saveSettings(); });
+$('#statusPill').addEventListener('click', () => go('setup'));
+
+$('#btnEditPrompt').addEventListener('click', () => { $('#promptArea').value = S.prompt || DEFAULT_PROMPT; $('#dlgPrompt').returnValue = ''; $('#dlgPrompt').showModal(); });
+$('#btnPromptReset').addEventListener('click', () => { $('#promptArea').value = DEFAULT_PROMPT; });
+$('#dlgPrompt').addEventListener('close', () => {
+  if ($('#dlgPrompt').returnValue !== 'save') return;
+  const v = $('#promptArea').value.trim();
+  S.prompt = !v || v === DEFAULT_PROMPT.trim() ? null : v;
+  if (S.prompt) store.set('prompt', S.prompt); else store.del('prompt');
+  renderSetup(); toast(S.prompt ? 'Custom instructions saved on this computer.' : 'Default instructions restored.', 'ok');
+});
+
+/* ------------------------------------------------------------------ wiring: case */
+$('#panel-case').addEventListener('input', (e) => {
+  const k = e.target.dataset && e.target.dataset.case; if (!k) return;
+  S.caseInfo[k] = e.target.value; markDirty();
+  if (OFFICE_FIELDS.includes(k)) { const o = store.get('office', {}); o[k] = e.target.value; store.set('office', o); }
+  if (k === 'action') $('#c_actionOther').hidden = e.target.value !== 'other';
+  updateSteps();
+});
+$('#c_preferredExample').addEventListener('change', (e) => { S.caseInfo.preferredExample = e.target.value; markDirty(); });
+
+/* ------------------------------------------------------------------ wiring: documents */
+let pickerCat = 'input';
+for (const z of $$('[data-drop]')) {
+  const cat = z.dataset.drop;
+  z.addEventListener('click', () => { pickerCat = cat; $('#filePicker').click(); });
+  z.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickerCat = cat; $('#filePicker').click(); } });
+  z.addEventListener('dragover', (e) => { e.preventDefault(); z.classList.add('over'); });
+  z.addEventListener('dragleave', () => z.classList.remove('over'));
+  z.addEventListener('drop', (e) => { e.preventDefault(); z.classList.remove('over'); addFiles(e.dataTransfer.files, cat); });
+}
+// Dropping a file anywhere else must not navigate away from the app.
+window.addEventListener('dragover', (e) => e.preventDefault());
+window.addEventListener('drop', (e) => e.preventDefault());
+$('#filePicker').addEventListener('change', (e) => { const f = [...e.target.files]; e.target.value = ''; addFiles(f, pickerCat); });
+for (const b of $$('[data-paste]')) b.addEventListener('click', () => openTextDialog(null, b.dataset.paste));
+$('#panel-docs').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-act]'); if (!b || b.tagName === 'SELECT' || b.tagName === 'INPUT') return;
+  const d = S.docs.find((x) => x.id === b.dataset.id); if (!d) return;
+  if (b.dataset.act === 'remove') removeDoc(d.id);
+  else if (b.dataset.act === 'view') openTextDialog(d);
+});
+$('#panel-docs').addEventListener('change', (e) => {
+  const el = e.target; const act = el.dataset && el.dataset.act; if (!act) return;
+  const d = S.docs.find((x) => x.id === el.dataset.id); if (!d) return;
+  if (act === 'type') d.type = el.value;
+  else if (act === 'label') d.label = el.value.trim();
+  else if (act === 'sendpdf') d.sendPdf = el.checked;
+  markDirty(); renderDocs();
+  if (d.cat !== 'input') syncLibrary(d.cat);
+});
+$('#libTemplate').addEventListener('change', (e) => { S.rememberLib.template = e.target.checked; saveSettings(); syncLibrary('template'); });
+$('#libCriteria').addEventListener('change', (e) => { S.rememberLib.criteria = e.target.checked; saveSettings(); syncLibrary('criteria'); });
+
+/* ------------------------------------------------------------------ wiring: navigation */
+document.addEventListener('click', (e) => {
+  const g = e.target.closest('[data-goto]'); if (g) { e.preventDefault(); go(g.dataset.goto); return; }
+  const s = e.target.closest('#steps button[data-step]'); if (s) go(s.dataset.step);
+});
+
+/* ------------------------------------------------------------------ init */
+function renderAll() {
+  renderSetup(); renderCase(); renderDocs(); renderAnalysis(); renderDraft();
+  $('#libTemplate').checked = S.rememberLib.template; $('#libCriteria').checked = S.rememberLib.criteria;
+  applyEditorFont(); updateSteps();
+}
+(async function init() {
+  const st = store.get('settings', null);
+  if (st) {
+    S.provider = PROVIDERS[st.provider] ? st.provider : S.provider;
+    Object.assign(S.model, st.model || {});
+    S.effort = st.effort || S.effort; S.maxOut = st.maxOut || '';
+    S.rememberKey = !!st.rememberKey;
+    Object.assign(S.rememberLib, st.rememberLib || {});
+    Object.assign(S.exportPrefs, st.exportPrefs || {});
+  }
+  if (S.rememberKey) Object.assign(S.keys, store.get('keys', {}));
+  S.prompt = store.get('prompt', null);
+  S.caseInfo = { ...store.get('office', {}), action: ACTIONS[0].value, memoDate: todayISO() };
+  renderAll(); go('setup');
+  Promise.all([loadLib('marked'), loadLib('purify')]).then(() => { if (S.analysis) renderAnalysis(); if (S.drafts.length) renderDraft(); })
+    .catch((e) => toast(e.message + ' Formatting of AI replies will be basic.', 'warn', 8000));
+  await loadLibrary();
+})();
+</script>
+</body>
+</html>
